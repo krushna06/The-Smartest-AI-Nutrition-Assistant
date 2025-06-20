@@ -4,7 +4,7 @@
 
 **The Smartest AI Nutrition Assistant** is an intelligent, all-in-one platform that uses state-of-the-art generative AI to deliver hyper-personalized nutrition guidance. Unlike traditional one-size-fits-all apps, this assistant learns, reasons, and adapts like a real nutrition expert—offering dynamic meal plans, contextual recommendations, and intuitive interactions via **text, voice, and image** inputs.
 
-This project **does not rely on external LLM APIs** like ChatGPT, Deepseek or Claude. Instead, it builds and fine-tunes its own local models using **Python, SQL**, and open-source AI tools.
+This project **does not rely on external LLM APIs** like ChatGPT, Deepseek, or Claude. Instead, it uses **a local Ollama-hosted Mistral model** and open-source tools such as **Teachable Machine** for image classification, along with **Python** and **SQL** for its core logic and data management.
 
 ---
 
@@ -15,7 +15,7 @@ This project **does not rely on external LLM APIs** like ChatGPT, Deepseek or Cl
 
   * ✍️ Text queries (e.g., “Plan a vegan diet for muscle gain”)
   * 🎤 Voice input (via speech-to-text)
-  * 📸 Image input (e.g., food photos, nutrition labels)
+  * 📸 Image input (e.g., food photos, nutrition labels) using **Google Teachable Machine**
 
 * **Personalized Meal Plan Generation**
   Tailored to:
@@ -37,7 +37,7 @@ This project **does not rely on external LLM APIs** like ChatGPT, Deepseek or Cl
   * “What happens if I skip this meal?”
 
 * **Edge-capable Architecture**
-  Designed for on-device inference without cloud APIs
+  Designed for on-device inference using **Ollama with Mistral** and no reliance on cloud APIs
 
 ---
 
@@ -53,14 +53,14 @@ This project **does not rely on external LLM APIs** like ChatGPT, Deepseek or Cl
 +-------------------------+
 |  Multimodal Input Engine|
 |  - NLP                  |
-|  - CV (Image Analysis)  |
+|  - CV (Teachable Machine)|
 |  - Voice Parsing        |
 +-----------+-------------+
             |
             v
 +-------------------------+
 |  AI Reasoning Engine    |
-|  - Nutrition LLM        |
+|  - Local Mistral LLM    |
 |  - Goal-based Planner   |
 +-----------+-------------+
             |
@@ -84,15 +84,15 @@ This project **does not rely on external LLM APIs** like ChatGPT, Deepseek or Cl
 
 ## 🛠 Tech Stack
 
-| Component            | Technology Used                                                  |
-| -------------------- | ---------------------------------------------------------------- |
-| Language             | Python, SQL                                                      |
-| AI Models            | Local LLM (e.g., Mistral, LLaMA), Nutrition-specific fine-tuning |
-| Image Understanding  | OpenCV                                                           |
-| Voice Input          | Whisper (open-source STT)                                        |
-| Meal Planning Engine | Rule-based + LLM hybrid logic                                    |
-| Storage              | SQLite                                                           |
-| Frontend (Optional)  | Flask                                                            |
+| Component            | Technology Used                                                |
+| -------------------- | -------------------------------------------------------------- |
+| Language             | Python, SQL                                                    |
+| AI Models            | **Local Mistral (via Ollama)**, Nutrition-specific fine-tuning |
+| Image Understanding  | **Google Teachable Machine** (for food/image classification)   |
+| Voice Input          | Whisper (open-source STT)                                      |
+| Meal Planning Engine | Rule-based + LLM hybrid logic                                  |
+| Storage              | SQLite                                                         |
+| Frontend (Optional)  | Flask                                                          |
 
 ---
 
@@ -102,10 +102,10 @@ This project **does not rely on external LLM APIs** like ChatGPT, Deepseek or Cl
 nutrition-assistant/
 │
 ├── data/                   # Food DBs, user logs, images
-├── models/                 # Trained/fine-tuned local models
+├── models/                 # Local LLMs (Ollama Mistral), trained Teachable models
 ├── engine/                 # Core logic: planning, feedback, parsing
 │   ├── nlp/                # NLP pipeline
-│   ├── vision/             # Image processing
+│   ├── vision/             # Teachable Machine integration and image processing
 │   ├── planner.py          # Personalized meal planner
 │   ├── explainer.py        # Explanation generator
 │   └── feedback_loop.py    # Adaptive learning loop
@@ -118,7 +118,7 @@ nutrition-assistant/
 │   └── web_ui.py
 │
 ├── train/                 # Fine-tuning and dataset scripts
-│   └── train_llm.py
+│   └── train_llm.py       # LLM-specific tuning for nutrition tasks
 │
 ├── utils/                 # Helper functions, config parsers
 ├── requirements.txt
@@ -128,7 +128,8 @@ nutrition-assistant/
 
 ## 🔐 Privacy & Security
 
-* **Runs locally** — No cloud processing of personal data.
+* **Runs entirely locally** — including model inference and image classification.
+* **No external API calls** — all logic and data stay on-device.
 * **Data is encrypted** and stored locally or optionally in secure on-prem SQL databases.
 
 ---
