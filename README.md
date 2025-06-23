@@ -96,36 +96,6 @@ This project **does not rely on external LLM APIs** like ChatGPT, Deepseek, or C
 
 ---
 
-## 📂 Project Structure
-
-```
-nutrition-assistant/
-│
-├── data/                   # Food DBs, user logs, images
-├── models/                 # Local LLMs (Ollama Mistral), trained Teachable models
-├── engine/                 # Core logic: planning, feedback, parsing
-│   ├── nlp/                # NLP pipeline
-│   ├── vision/             # Teachable Machine integration and image processing
-│   ├── planner.py          # Personalized meal planner
-│   ├── explainer.py        # Explanation generator
-│   └── feedback_loop.py    # Adaptive learning loop
-│
-├── db/                    # SQL schema and sample queries
-│   └── schema.sql
-│
-├── interface/             # CLI or Web UI
-│   ├── cli.py
-│   └── web_ui.py
-│
-├── train/                 # Fine-tuning and dataset scripts
-│   └── train_llm.py       # LLM-specific tuning for nutrition tasks
-│
-├── utils/                 # Helper functions, config parsers
-├── requirements.txt
-```
-
----
-
 ## 🔐 Privacy & Security
 
 * **Runs entirely locally** — including model inference and image classification.
@@ -140,7 +110,7 @@ Pull requests and issue reports are welcome! To contribute:
 
 ```bash
 git clone https://github.com/krushna06/The-Smartest-AI-Nutrition-Assistant.git
-pip install -r requirements.txt
+cd The-Smartest-AI-Nutrition-Assistant-main
 ```
 
 ---
