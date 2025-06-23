@@ -144,7 +144,7 @@ export default function SpotlightSearch({ isOpen, onClose, onSearch }: Spotlight
                         <motion.div 
                           key={index}
                           data-result={index}
-                          className="px-4 py-3 hover:bg-[#2a2a2a] cursor-pointer flex items-center"
+                          className="px-6 py-3 hover:bg-[#2a2a2a] cursor-pointer flex items-center group"
                           initial={{ opacity: 0, x: -10 }}
                           animate={{ 
                             opacity: 1, 
@@ -157,7 +157,7 @@ export default function SpotlightSearch({ isOpen, onClose, onSearch }: Spotlight
                             }
                           }}
                           whileHover={{ 
-                            x: 4,
+                            backgroundColor: 'rgba(42, 42, 42, 0.8)',
                             transition: { type: 'spring', stiffness: 400, damping: 20 }
                           }}
                           whileTap={{ scale: 0.98 }}
@@ -180,8 +180,10 @@ export default function SpotlightSearch({ isOpen, onClose, onSearch }: Spotlight
                             }
                           }}
                         >
-                          <MessageSquare size={16} className="text-[#8f8f8f] mr-3 flex-shrink-0" />
-                          <span className="truncate text-[#e0e0e0]">{result}</span>
+                          <div className="w-6 flex-shrink-0 flex items-center justify-center">
+                            <MessageSquare size={16} className="text-[#8f8f8f] group-hover:text-[#e0e0e0] transition-colors" />
+                          </div>
+                          <span className="truncate text-[#e0e0e0] ml-2">{result}</span>
                         </motion.div>
                       ))}
                     </div>
