@@ -1,11 +1,40 @@
 'use client';
 
-import { useState } from 'react';
-import { MessageSquare, Search, Menu } from 'lucide-react';
+import { useState, useCallback, useEffect } from 'react';
+import { MessageSquare, Search, Menu, Command } from 'lucide-react';
+import SpotlightSearch from './SpotlightSearch';
 
 export default function Sidebar() {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+
+  const toggleSearch = useCallback(() => {
+    setIsSearchOpen(prev => !prev);
+  }, []);
+
+  const handleSearch = (query: string): string[] => {
+    if (query) {
+      return [
+        `Chat about ${query}`,
+        `Notes on ${query}`,
+        `Meeting: ${query} discussion`
+      ];
+    }
+    return [];
+  };
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        toggleSearch();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [toggleSearch]);
 
   const toggleSidebar = () => {
     setIsCollapsed(!isCollapsed);
@@ -32,11 +61,26 @@ export default function Sidebar() {
       </div>
 
       <div className="px-2 pb-2">
-        <button className="w-full flex items-center space-x-3 text-gray-400 py-2 px-3">
-          <Search size={20} />
-          {!isCollapsed && <span>Search Chats</span>}
+        <button 
+          onClick={toggleSearch}
+          className="w-full flex items-center space-x-3 text-[#a1a1aa] rounded-lg py-2 px-3"
+        >
+          <Search size={20} className="text-[#a1a1aa]" />
+          {!isCollapsed && <span className="text-[#e5e7eb]">Search Chats</span>}
+          {!isCollapsed && (
+            <div className="ml-auto flex items-center space-x-1 text-xs bg-[#2d2d2d] text-[#a1a1aa] px-2 py-0.5 rounded border border-[#3d3d3d]">
+              <Command size={12} />
+              <span>K</span>
+            </div>
+          )}
         </button>
       </div>
+
+      <SpotlightSearch 
+        isOpen={isSearchOpen}
+        onClose={() => setIsSearchOpen(false)}
+        onSearch={handleSearch}
+      />
 
       <div className="mx-4"></div>
 
