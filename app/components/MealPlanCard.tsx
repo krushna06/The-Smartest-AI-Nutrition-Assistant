@@ -26,7 +26,7 @@ export default function MealPlanCard({ mealPlan, onGenerateMealPlan }: MealPlanC
           <span>Meal Plan</span>
         </h3>
       </div>
-      <div className="flex flex-col items-center justify-center p-8 min-h-[180px]">
+      <div className="flex flex-col items-center justify-center p-8 min-h-[180p x]">
         {!mealPlan ? (
           <button
             className="px-4 py-2 bg-[#232323] text-[#e0e0e0] rounded-lg shadow hover:bg-[#2a2a2a] border border-[#333333] focus:outline-none focus:ring-2 focus:ring-[#333333] focus:ring-opacity-50 transition" style={{ borderWidth: 0.5 }}
