@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Paperclip, Mic } from "lucide-react";
 import dynamic from "next/dynamic";
 import { motion, AnimatePresence } from "framer-motion";
+import { useRouter } from "next/navigation";
 import type { Meal } from "./components/MealPlanCard";
 
 const Sidebar = dynamic(() => import("./components/Sidebar"), { ssr: false });
@@ -13,6 +14,8 @@ const MealPlanCard = dynamic(() => import("./components/MealPlanCard"), {
 
 export default function Home() {
   const [selectedMealPlan, setSelectedMealPlan] = useState<Meal[] | null>(null);
+  const [input, setInput] = useState('');
+  const router = useRouter();
 
   const handleMealPlanSelect = (mealPlanString?: string) => {
     if (mealPlanString) {
@@ -21,6 +24,14 @@ export default function Home() {
     } else {
       setSelectedMealPlan(null);
     }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!input.trim()) return;
+    
+    const chatId = crypto.randomUUID();
+    router.push(`/chat/${chatId}?message=${encodeURIComponent(input)}`);
   };
 
   return (
@@ -49,23 +60,25 @@ export default function Home() {
                 </motion.div>
               )}
             </AnimatePresence>
-            <div className="relative">
+            <form onSubmit={handleSubmit} className="relative">
               <input
                 type="text"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
                 placeholder="Ask Anything"
                 className="w-full bg-[#404040] text-white placeholder-gray-400 rounded-xl px-4 py-4 pr-20 text-lg focus:outline-none"
               />
 
               <div className="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center space-x-3">
-                <button className="text-gray-400 p-1" aria-label="Attach file">
+                <button type="button" className="text-gray-400 p-1" aria-label="Attach file">
                   <Paperclip size={20} />
                 </button>
 
-                <button className="text-gray-400 p-1" aria-label="Voice input">
+                <button type="button" className="text-gray-400 p-1" aria-label="Voice input">
                   <Mic size={20} />
                 </button>
               </div>
-            </div>
+            </form>
           </div>
         </div>
       </main>
