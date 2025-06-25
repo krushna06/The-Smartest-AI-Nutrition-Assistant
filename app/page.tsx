@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Paperclip, Mic, MicOff } from "lucide-react";
 import dynamic from "next/dynamic";
 import { motion, AnimatePresence } from "framer-motion";
@@ -19,8 +19,10 @@ export default function Home() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isRecording, setIsRecording] = useState(false);
-  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
+  const mediaRecorder = useRef<MediaRecorder | null>(null);
   const audioChunks = useRef<Blob[]>([]);
+  const mediaStream = useRef<MediaStream | null>(null);
+  const [isInitialized, setIsInitialized] = useState(false);
   const router = useRouter();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -54,121 +56,132 @@ export default function Home() {
     }
   };
 
+  const initRecorder = useCallback(async () => {
+    if (isInitialized) return true;
+    
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          sampleRate: 16000,
+          channelCount: 1,
+        },
+        video: false
+      });
+      
+      mediaStream.current = stream;
+      
+      const mimeType = [
+        'audio/webm;codecs=opus',
+        'audio/webm',
+        'audio/ogg;codecs=opus',
+        'audio/ogg',
+        'audio/wav',
+        'audio/mp4',
+      ].find(type => MediaRecorder.isTypeSupported(type));
+      
+      console.log('Using MIME type:', mimeType || 'default');
+      
+      const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+      
+      recorder.ondataavailable = (event) => {
+        if (event.data && event.data.size > 0) {
+          console.log('Audio data available, size:', event.data.size);
+          audioChunks.current.push(event.data);
+        }
+      };
+      
+      recorder.onstop = async () => {
+        console.log('Recording stopped, processing audio...');
+        setIsRecording(false);
+        
+        if (audioChunks.current.length === 0) {
+          console.warn('No audio data recorded');
+          return;
+        }
+
+        try {
+          const audioBlob = new Blob(audioChunks.current, { 
+            type: audioChunks.current[0]?.type || 'audio/wav'
+          });
+          
+          console.log('Sending audio blob, size:', audioBlob.size, 'type:', audioBlob.type);
+          await sendAudioToBackend(audioBlob);
+        } catch (error) {
+          console.error('Error processing audio:', error);
+        } finally {
+          audioChunks.current = [];
+        }
+      };
+      
+      recorder.onerror = (event) => {
+        console.error('MediaRecorder error:', event);
+        setIsRecording(false);
+        alert('An error occurred during recording. Please try again.');
+      };
+      
+      mediaRecorder.current = recorder;
+      setIsInitialized(true);
+      return true;
+      
+    } catch (err) {
+      console.error('Error initializing audio recorder:', err);
+      alert('Error accessing microphone. Please check permissions and try again.');
+      return false;
+    }
+  }, [isInitialized]);
+
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    let stream: MediaStream | null = null;
-    let recorder: MediaRecorder | null = null;
-
-    const cleanup = () => {
-      if (recorder && recorder.state !== 'inactive') {
-        recorder.stop();
+    return () => {
+      if (mediaRecorder.current?.state === 'recording') {
+        mediaRecorder.current.stop();
       }
-      if (stream) {
-        stream.getTracks().forEach(track => track.stop());
+      if (mediaStream.current) {
+        mediaStream.current.getTracks().forEach(track => track.stop());
+        mediaStream.current = null;
       }
+      setIsInitialized(false);
     };
-
-    const initRecorder = async () => {
-      try {
-        const possibleTypes = [
-          'audio/webm;codecs=opus',
-          'audio/webm',
-          'audio/ogg;codecs=opus',
-          'audio/ogg',
-          'audio/wav',
-          'audio/mp4',
-        ];
-        
-        const supportedTypes = possibleTypes.filter(type => {
-          return MediaRecorder.isTypeSupported(type);
-        });
-        
-        const mimeType = supportedTypes[0] || '';
-        console.log('Using MIME type:', mimeType || 'default');
-
-        stream = await navigator.mediaDevices.getUserMedia({ 
-          audio: {
-            echoCancellation: true,
-            noiseSuppression: true,
-            sampleRate: 16000,
-            channelCount: 1,
-          },
-          video: false
-        });
-
-        const options = mimeType ? { mimeType } : undefined;
-        recorder = new MediaRecorder(stream, options);
-        
-        recorder.ondataavailable = (event) => {
-          if (event.data && event.data.size > 0) {
-            console.log('Audio data available, size:', event.data.size);
-            audioChunks.current.push(event.data);
-          }
-        };
-        
-        recorder.onstop = async () => {
-          console.log('Recording stopped, processing audio...');
-          if (audioChunks.current.length === 0) {
-            console.warn('No audio data recorded');
-            return;
-          }
-
-          try {
-            const audioBlob = new Blob(audioChunks.current, { 
-              type: audioChunks.current[0].type || 'audio/wav'
-            });
-            
-            console.log('Sending audio blob, size:', audioBlob.size, 'type:', audioBlob.type);
-            await sendAudioToBackend(audioBlob);
-          } catch (error) {
-            console.error('Error processing audio:', error);
-          } finally {
-            audioChunks.current = [];
-          }
-        };
-        
-        setMediaRecorder(recorder);
-      } catch (err) {
-        console.error('Error initializing audio recorder:', err);
-        alert('Error accessing microphone. Please check permissions and try again.');
-      }
-    };
-
-    initRecorder();
-
-    return cleanup;
   }, []);
 
-  const toggleRecording = () => {
-    if (!mediaRecorder) {
-      console.error('MediaRecorder not initialized');
-      alert('Microphone access not available. Please check your browser permissions.');
-      return;
-    }
-
-    if (isRecording) {
-      console.log('Stopping recording...');
-      try {
-        mediaRecorder.stop();
-        mediaRecorder.stream.getTracks().forEach(track => track.stop());
-      } catch (error) {
-        console.error('Error stopping recording:', error);
-      } finally {
-        setIsRecording(false);
+  const toggleRecording = useCallback(async () => {
+    try {
+      if (isRecording) {
+        console.log('Stopping recording...');
+        if (mediaRecorder.current?.state === 'recording') {
+          mediaRecorder.current.stop();
+        }
+      } else {
+        console.log('Starting recording...');
+        audioChunks.current = [];
+        
+        if (!isInitialized) {
+          const success = await initRecorder();
+          if (!success) return;
+        }
+        
+        if (mediaRecorder.current) {
+          try {
+            mediaRecorder.current.start(100);
+            setIsRecording(true);
+          } catch (error) {
+            console.error('Error starting recording:', error);
+            alert('Failed to start recording. Please try again.');
+            setIsInitialized(false);
+            mediaRecorder.current = null;
+            if (mediaStream.current) {
+              mediaStream.current.getTracks().forEach(track => track.stop());
+              mediaStream.current = null;
+            }
+          }
+        }
       }
-    } else {
-      console.log('Starting recording...');
-      audioChunks.current = [];
-      try {
-        mediaRecorder.start(100);
-        setIsRecording(true);
-      } catch (error) {
-        console.error('Error starting recording:', error);
-        alert('Failed to start recording. Please try again.');
-      }
+    } catch (error) {
+      console.error('Error in toggleRecording:', error);
+      setIsRecording(false);
     }
-  };
+  }, [isRecording, isInitialized, initRecorder]);
 
   const sendAudioToBackend = async (audioBlob: Blob) => {
     try {
