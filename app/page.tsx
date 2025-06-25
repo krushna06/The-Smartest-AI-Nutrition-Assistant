@@ -5,6 +5,7 @@ import { Paperclip, Mic } from "lucide-react";
 import dynamic from "next/dynamic";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
+import { saveChat } from "./utils/chatStorage";
 import type { Meal } from "./components/MealPlanCard";
 
 const Sidebar = dynamic(() => import("./components/Sidebar"), { ssr: false });
@@ -31,9 +32,14 @@ export default function Home() {
     if (!input.trim()) return;
     
     const chatId = crypto.randomUUID();
+    saveChat({
+      id: chatId,
+      title: input.length > 30 ? `${input.substring(0, 30)}...` : input,
+    });
+    
     router.push(`/chat/${chatId}?message=${encodeURIComponent(input)}`);
   };
-
+  
   return (
     <>
       <Sidebar />

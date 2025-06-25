@@ -2,9 +2,16 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { saveMealPlanToChat } from "@/app/utils/chatStorage";
+import { usePathname } from "next/navigation";
 
 export type Meal = {
   name: string;
+  description: string;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
   items: string[];
 };
 
@@ -15,6 +22,15 @@ interface MealGeneratorProps {
 }
 
 export default function MealGenerator({ isOpen, onClose, onMealGenerated }: MealGeneratorProps) {
+  const pathname = usePathname();
+  const chatId = pathname.split('/').pop() || '';
+  
+  const [nutritionInfo, setNutritionInfo] = useState({
+    calories: 0,
+    protein: 0,
+    carbs: 0,
+    fat: 0
+  });
   const [formData, setFormData] = useState({
     age: '',
     gender: 'male',
@@ -37,6 +53,13 @@ export default function MealGenerator({ isOpen, onClose, onMealGenerated }: Meal
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    
+    setNutritionInfo({
+      calories: 0,
+      protein: 0,
+      carbs: 0,
+      fat: 0
+    });
 
     try {
       const prompt = `You are a nutrition expert. Create a personalized meal plan based on these details:
@@ -91,11 +114,30 @@ Dinner
       const meals: Meal[] = [];
       const lines = responseText.split('\n').map((line: string) => line.trim()).filter(Boolean);
       
+      const nutritionMatch = responseText.match(/Calories: (\d+).*?Protein: (\d+)g.*?Carbs: (\d+)g.*?Fat: (\d+)g/i);
+      if (nutritionMatch) {
+        setNutritionInfo({
+          calories: parseInt(nutritionMatch[1]) || 0,
+          protein: parseInt(nutritionMatch[2]) || 0,
+          carbs: parseInt(nutritionMatch[3]) || 0,
+          fat: parseInt(nutritionMatch[4]) || 0
+        });
+      }
+      
       const tableRegex = /\|.*\|/g;
       if (responseText.match(tableRegex)) {
         console.log('Detected markdown table format');
         
-        let currentMeal: { name: string; items: string[] } | null = null;
+        const defaultMeal: Meal = {
+          name: '',
+          items: [],
+          description: '',
+          calories: 0,
+          protein: 0,
+          carbs: 0,
+          fat: 0
+        };
+        let currentMeal: Meal = { ...defaultMeal };
         
         for (const line of lines) {
           if (line.startsWith('|--') || line.startsWith('| Meal') || line === '|') continue;
@@ -107,7 +149,12 @@ Dinner
             }
             currentMeal = {
               name: mealMatch[1],
-              items: []
+              items: [],
+              description: '',
+              calories: 0,
+              protein: 0,
+              carbs: 0,
+              fat: 0
             };
             
             const itemMatch = line.match(/\|\s*\*\*.*?\*\*\s*\|\s*(.*?)\s*\|/);
@@ -116,9 +163,7 @@ Dinner
                 .map((item: string) => item.trim())
                 .filter((item: string) => item && !item.includes('---') && !item.includes('Meal') && !item.includes('Food Type'));
               
-              if (currentMeal) {
-                currentMeal.items = [...new Set([...currentMeal.items, ...items])].slice(0, 3);
-              }
+              currentMeal.items = [...new Set([...currentMeal.items, ...items])].slice(0, 3);
             }
           } else if (currentMeal) {
             const items = line.split('|')
@@ -130,21 +175,46 @@ Dinner
                 .map((subItem: string) => subItem.trim())
                 .filter((subItem: string) => subItem);
                 
-              currentMeal!.items = [...new Set([...currentMeal!.items, ...subItems])].slice(0, 3);
+currentMeal.items = [...new Set([...currentMeal.items, ...subItems])].slice(0, 3);
+              currentMeal.description = currentMeal.items.join(', ');
             });
           }
         }
         
-        if (currentMeal && currentMeal.items.length > 0) {
+        if (currentMeal.name.trim()) {
           meals.push(currentMeal);
         }
       } else {
         console.log('Using line-based parsing');
         
-        const defaultMeals: Meal[] = [
-          { name: 'Breakfast', items: [] },
-          { name: 'Lunch', items: [] },
-          { name: 'Dinner', items: [] }
+      const defaultMeals: Meal[] = [
+          {
+            name: 'Breakfast',
+            items: [],
+            description: '',
+            calories: 0,
+            protein: 0,
+            carbs: 0,
+            fat: 0
+          },
+          {
+            name: 'Lunch',
+            items: [],
+            description: '',
+            calories: 0,
+            protein: 0,
+            carbs: 0,
+            fat: 0
+          },
+          {
+            name: 'Dinner',
+            items: [],
+            description: '',
+            calories: 0,
+            protein: 0,
+            carbs: 0,
+            fat: 0
+          }
         ];
         
         let currentMealIndex = -1;
@@ -188,13 +258,37 @@ Dinner
       
       if (meals.length === 0) {
         meals.push(
-          { name: 'Breakfast', items: ['Oatmeal with berries', 'Greek yogurt', 'Green smoothie'] },
-          { name: 'Lunch', items: ['Grilled chicken salad', 'Quinoa', 'Fruit'] },
-          { name: 'Dinner', items: ['Baked salmon', 'Steamed vegetables', 'Mixed salad'] }
+          { name: 'Breakfast', items: ['Oatmeal with berries', 'Greek yogurt', 'Green smoothie'], description: '', calories: 0, protein: 0, carbs: 0, fat: 0 },
+          { name: 'Lunch', items: ['Grilled chicken salad', 'Quinoa', 'Fruit'], description: '', calories: 0, protein: 0, carbs: 0, fat: 0 },
+          { name: 'Dinner', items: ['Baked salmon', 'Steamed vegetables', 'Mixed salad'], description: '', calories: 0, protein: 0, carbs: 0, fat: 0 }
         );
       }
 
-      onMealGenerated(meals);
+      const enhancedMeals = meals.map((meal, index) => ({
+        ...meal,
+        description: meal.items.join(', '),
+        calories: Math.round(nutritionInfo.calories / meals.length),
+        protein: Math.round(nutritionInfo.protein / meals.length),
+        carbs: Math.round(nutritionInfo.carbs / meals.length),
+        fat: Math.round(nutritionInfo.fat / meals.length)
+      }));
+      
+      onMealGenerated(enhancedMeals);
+      
+      if (chatId) {
+        const mealPlan = {
+          meals: enhancedMeals.map(meal => ({
+            name: meal.name,
+            description: meal.description,
+            calories: meal.calories,
+            protein: meal.protein,
+            carbs: meal.carbs,
+            fat: meal.fat
+          }))
+        };
+        
+        await saveMealPlanToChat(chatId, mealPlan);
+      }
       onClose();
     } catch (error) {
       console.error('Error generating meal plan:', error);

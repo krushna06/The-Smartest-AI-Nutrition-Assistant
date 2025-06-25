@@ -2,10 +2,11 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Paperclip, Mic, Send, Bot, User, ArrowLeft, MessageSquare } from "lucide-react";
+import { Paperclip, Mic, Send, Bot, User, ArrowLeft, MessageSquare, Utensils, Clock, Flame, Egg, Carrot } from "lucide-react";
 import Link from "next/link";
+import { getChat, addMessageToChat, saveChat } from "@/app/utils/chatStorage";
 
-type Message = {
+type UIMessage = {
   id: string;
   content: string;
   role: 'user' | 'assistant';
@@ -13,12 +14,33 @@ type Message = {
 };
 
 export default function ChatPage({ params }: { params: { id: string } }) {
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<UIMessage[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [mealPlan, setMealPlan] = useState<any>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const searchParams = useSearchParams();
   const router = useRouter();
+  const chatId = params.id;
+
+  useEffect(() => {
+    const loadChat = () => {
+      const chat = getChat(chatId);
+      if (chat) {
+        const loadedMessages = chat.messages.map(msg => ({
+          ...msg,
+          timestamp: new Date(msg.timestamp)
+        }));
+        setMessages(loadedMessages);
+        
+        if (chat.mealPlan) {
+          setMealPlan(chat.mealPlan);
+        }
+      }
+    };
+
+    loadChat();
+  }, [chatId]);
 
   useEffect(() => {
     scrollToBottom();
@@ -26,17 +48,28 @@ export default function ChatPage({ params }: { params: { id: string } }) {
 
   useEffect(() => {
     const initialMessage = searchParams.get('message');
-    if (initialMessage) {
-      const userMessage: Message = {
+    if (initialMessage && messages.length === 0) {
+      const userMessage: UIMessage = {
         id: Date.now().toString(),
         content: decodeURIComponent(initialMessage),
         role: 'user',
         timestamp: new Date(),
       };
+      
+      const chat = getChat(chatId);
+      if (!chat) {
+        saveChat({
+          id: chatId,
+          title: initialMessage.length > 30 
+            ? `${initialMessage.substring(0, 30)}...` 
+            : initialMessage,
+        });
+      }
+      
       setMessages([userMessage]);
       handleSendMessage(userMessage.content);
     }
-  }, []);
+  }, [searchParams, chatId]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -46,6 +79,12 @@ export default function ChatPage({ params }: { params: { id: string } }) {
     setIsLoading(true);
     
     try {
+      const userMessage = {
+        role: 'user' as const,
+        content: messageContent,
+      };
+      addMessageToChat(chatId, userMessage);
+      
       const response = await fetch('http://localhost:11434/api/generate', {
         method: 'POST',
         headers: {
@@ -63,18 +102,23 @@ export default function ChatPage({ params }: { params: { id: string } }) {
       }
 
       const data = await response.json();
+      const responseContent = data.response || 'I apologize, but I am unable to provide a response at this time.';
       
-      const assistantMessage: Message = {
-        id: Date.now().toString(),
-        content: data.response || 'I apologize, but I am unable to provide a response at this time.',
+      await addMessageToChat(chatId, {
         role: 'assistant',
-        timestamp: new Date(),
-      };
-
-      setMessages(prev => [...prev, assistantMessage]);
+        content: responseContent,
+      });
+      
+      const updatedChat = getChat(chatId);
+      if (updatedChat) {
+        setMessages(updatedChat.messages.map(msg => ({
+          ...msg,
+          timestamp: new Date(msg.timestamp)
+        })));
+      }
     } catch (error) {
       console.error('Error:', error);
-      const errorMessage: Message = {
+      const errorMessage: UIMessage = {
         id: Date.now().toString(),
         content: 'Sorry, I encountered an error. Please try again.',
         role: 'assistant',
@@ -89,17 +133,57 @@ export default function ChatPage({ params }: { params: { id: string } }) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
-
-    const userMessage: Message = {
+    
+    const userMessage: UIMessage = {
       id: Date.now().toString(),
       content: input,
       role: 'user',
       timestamp: new Date(),
     };
-
+    
     setMessages(prev => [...prev, userMessage]);
     setInput('');
+    
     handleSendMessage(input);
+  };
+
+  const renderMealPlan = () => {
+    if (!mealPlan) return null;
+    
+    return (
+      <div className="mb-6 p-4 bg-gray-800 rounded-lg">
+        <h3 className="text-lg font-semibold mb-3 flex items-center">
+          <Utensils className="w-5 h-5 mr-2 text-green-400" />
+          Your Meal Plan
+        </h3>
+        <div className="grid gap-4 md:grid-cols-3">
+          {mealPlan.meals.map((meal: any, index: number) => (
+            <div key={index} className="bg-gray-700 p-4 rounded-lg">
+              <h4 className="font-medium text-green-300 mb-2">{meal.name}</h4>
+              <p className="text-sm text-gray-300 mb-3">{meal.description}</p>
+              <div className="grid grid-cols-2 gap-2 text-xs text-gray-400">
+                <div className="flex items-center">
+                  <Flame className="w-3 h-3 mr-1 text-red-400" />
+                  {meal.calories} cal
+                </div>
+                <div className="flex items-center">
+                  <Egg className="w-3 h-3 mr-1 text-blue-400" />
+                  {meal.protein}g protein
+                </div>
+                <div className="flex items-center">
+                  <Carrot className="w-3 h-3 mr-1 text-yellow-400" />
+                  {meal.carbs}g carbs
+                </div>
+                <div className="flex items-center">
+                  <div className="w-3 h-3 mr-1 rounded-full bg-yellow-400"></div>
+                  {meal.fat}g fat
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -134,6 +218,7 @@ export default function ChatPage({ params }: { params: { id: string } }) {
             </div>
           ) : (
             <div className="space-y-4">
+              {renderMealPlan()}
               {messages.map((message) => (
                 <div
                   key={message.id}

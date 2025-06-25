@@ -1,13 +1,39 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { MessageSquare, Search, Menu, Command } from "lucide-react";
+import { MessageSquare, Search, Menu, Command, Trash2, Clock } from "lucide-react";
 import SpotlightSearch from "./SpotlightSearch";
+import { getChats, deleteChat, Chat } from "../utils/chatStorage";
+import { useRouter } from "next/navigation";
+import { formatDistanceToNow } from "date-fns";
 
 export default function Sidebar() {
   const [isCollapsed, setIsCollapsed] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [chats, setChats] = useState<Chat[]>([]);
+  const router = useRouter();
+
+  useEffect(() => {
+    setChats(getChats());
+    
+    const handleStorageChange = () => {
+      setChats(getChats());
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+  
+  const handleChatClick = (chatId: string) => {
+    router.push(`/chat/${chatId}`);
+  };
+  
+  const handleDeleteChat = (e: React.MouseEvent, chatId: string) => {
+    e.stopPropagation();
+    const updatedChats = deleteChat(chatId);
+    setChats(updatedChats);
+  };
 
   const toggleSearch = useCallback(() => {
     setIsSearchOpen((prev) => !prev);
@@ -97,12 +123,36 @@ export default function Sidebar() {
       <div className="mx-4"></div>
 
       <div className="flex-1 overflow-y-auto p-4">
-        {!isCollapsed && (
-          <div className="text-gray-400 text-xs font-medium mb-2 px-3">
-            RECENT
+        {!isCollapsed && chats.length > 0 && (
+          <div className="mb-4">
+            <div className="space-y-1">
+              {chats.map((chat) => (
+                <div
+                  key={chat.id}
+                  onClick={() => handleChatClick(chat.id)}
+                  className="group flex items-center justify-between p-2 rounded-lg hover:bg-white/5 cursor-pointer transition-colors"
+                >
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-white truncate">
+                      {chat.title}
+                    </p>
+                    <div className="flex items-center text-xs text-gray-400">
+                      <Clock className="w-3 h-3 mr-1" />
+                      <span>{formatDistanceToNow(chat.timestamp, { addSuffix: true })}</span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={(e) => handleDeleteChat(e, chat.id)}
+                    className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-400 p-1"
+                    aria-label="Delete chat"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              ))}
+            </div>
           </div>
         )}
-        <div className="space-y-1"></div>
       </div>
     </div>
   );
