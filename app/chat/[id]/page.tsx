@@ -245,7 +245,7 @@ export default function ChatPage({ params }: { params: { id: string } }) {
 
   return (
     <div className="flex-1 flex flex-col h-full bg-[#212121]">
-      <div className="bg-[#1e1e1e] p-4 border-b border-gray-800">
+      <div className="bg-[#1e1e1e] p-4 border-t border-[#424242]">
         <div className="container mx-auto flex items-center">
           <Link 
             href="/" 
@@ -330,7 +330,7 @@ export default function ChatPage({ params }: { params: { id: string } }) {
         </div>
       </div>
 
-      <div className="border-t border-gray-800 bg-[#1e1e1e] p-4">
+      <div className="border-t border-[#424242] bg-[#1e1e1e] p-4">
         <div className="container mx-auto max-w-5xl">
           <form onSubmit={handleSubmit} className="relative">
             <input
