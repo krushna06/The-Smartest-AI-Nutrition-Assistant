@@ -2,35 +2,32 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Custom Scrollbar */
 * {
   scrollbar-width: thin;
-  scrollbar-color: #424242 #212121; /* Dark gray on dark background */
+  scrollbar-color: #424242 #212121;
 }
 
-/* For Webkit browsers (Chrome, Safari, etc.) */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #212121; /* Match website background */
+  background: #212121;
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background-color: #424242; /* Slightly lighter gray */
+  background-color: #424242;
   border-radius: 4px;
-  border: 2px solid #212121; /* Match track color */
+  border: 2px solid #212121;
   transition: background-color 0.2s ease;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background-color: #616161; /* Lighter gray on hover */
+  background-color: #616161;
 }
 
-/* For Firefox */
 * {
   scrollbar-width: thin;
   scrollbar-color: #424242 #212121;
@@ -41,7 +38,7 @@ body {
   scrollbar-width: thin;
   scrollbar-color: #424242 #212121;
   color-scheme: dark;
-  background-color: #212121; /* Ensure body matches the layout */
+  background-color: #212121;
 }
 
 @layer utilities {
