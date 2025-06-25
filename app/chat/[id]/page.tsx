@@ -49,25 +49,51 @@ export default function ChatPage({ params }: { params: { id: string } }) {
   useEffect(() => {
     const initialMessage = searchParams.get('message');
     if (initialMessage && messages.length === 0) {
-      const userMessage: UIMessage = {
-        id: Date.now().toString(),
-        content: decodeURIComponent(initialMessage),
-        role: 'user',
-        timestamp: new Date(),
-      };
-      
       const chat = getChat(chatId);
-      if (!chat) {
-        saveChat({
-          id: chatId,
-          title: initialMessage.length > 30 
-            ? `${initialMessage.substring(0, 30)}...` 
-            : initialMessage,
-        });
-      }
       
-      setMessages([userMessage]);
-      handleSendMessage(userMessage.content);
+      if (!chat || chat.messages.length === 0) {
+        const tempId = `temp-${Date.now()}`;
+        const userMessage: UIMessage = {
+          id: tempId,
+          content: decodeURIComponent(initialMessage),
+          role: 'user',
+          timestamp: new Date(),
+        };
+        
+        setMessages([userMessage]);
+        
+        const updatedChat = addMessageToChat(chatId, {
+          role: 'user',
+          content: decodeURIComponent(initialMessage),
+        });
+        
+        if (!chat) {
+          saveChat({
+            id: chatId,
+            title: initialMessage.length > 30 
+              ? `${initialMessage.substring(0, 30)}...` 
+              : initialMessage,
+          });
+        }
+        
+        if (updatedChat) {
+          const savedMessage = updatedChat.messages[updatedChat.messages.length - 1];
+          
+          setMessages(prev => {
+            const newMessages = [...prev];
+            const messageIndex = newMessages.findIndex(msg => msg.id === tempId);
+            if (messageIndex !== -1) {
+              newMessages[messageIndex] = {
+                ...savedMessage,
+                timestamp: new Date(savedMessage.timestamp)
+              };
+            }
+            return newMessages;
+          });
+          
+          handleSendMessage(userMessage.content, true);
+        }
+      }
     }
   }, [searchParams, chatId]);
 
@@ -75,15 +101,17 @@ export default function ChatPage({ params }: { params: { id: string } }) {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const handleSendMessage = async (messageContent: string) => {
+  const handleSendMessage = async (messageContent: string, skipAddToChat = false) => {
     setIsLoading(true);
     
     try {
-      const userMessage = {
-        role: 'user' as const,
-        content: messageContent,
-      };
-      addMessageToChat(chatId, userMessage);
+      if (!skipAddToChat) {
+        const userMessage = {
+          role: 'user' as const,
+          content: messageContent,
+        };
+        addMessageToChat(chatId, userMessage);
+      }
       
       const currentChat = getChat(chatId);
       const mealPlanContext = currentChat?.mealPlan 
@@ -139,8 +167,9 @@ export default function ChatPage({ params }: { params: { id: string } }) {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
     
+    const tempId = `temp-${Date.now()}`;
     const userMessage: UIMessage = {
-      id: Date.now().toString(),
+      id: tempId,
       content: input,
       role: 'user',
       timestamp: new Date(),
@@ -149,7 +178,28 @@ export default function ChatPage({ params }: { params: { id: string } }) {
     setMessages(prev => [...prev, userMessage]);
     setInput('');
     
-    handleSendMessage(input);
+    const updatedChat = addMessageToChat(chatId, {
+      role: 'user',
+      content: input,
+    });
+    
+    if (updatedChat) {
+      const savedMessage = updatedChat.messages[updatedChat.messages.length - 1];
+      
+      setMessages(prev => {
+        const newMessages = [...prev];
+        const messageIndex = newMessages.findIndex(msg => msg.id === tempId);
+        if (messageIndex !== -1) {
+          newMessages[messageIndex] = {
+            ...savedMessage,
+            timestamp: new Date(savedMessage.timestamp)
+          };
+        }
+        return newMessages;
+      });
+      
+      handleSendMessage(input, true);
+    }
   };
 
   const renderMealPlan = () => {

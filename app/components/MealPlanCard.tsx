@@ -22,8 +22,8 @@ export default function MealPlanCard({ onSelect }: MealPlanCardProps) {
   const handleMealGenerated = (newMeals: Meal[]) => {
     if (newMeals && newMeals.length > 0) {
       setMeals(newMeals);
-      setSelectedMealPlan(true);
-      onSelect?.(JSON.stringify(newMeals));
+      // setSelectedMealPlan(true);
+      // onSelect?.(JSON.stringify(newMeals));
     }
   };
 
