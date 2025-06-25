@@ -85,6 +85,11 @@ export default function ChatPage({ params }: { params: { id: string } }) {
       };
       addMessageToChat(chatId, userMessage);
       
+      const currentChat = getChat(chatId);
+      const mealPlanContext = currentChat?.mealPlan 
+        ? `\n\nHere is the user's meal plan for context:\n${JSON.stringify(currentChat.mealPlan, null, 2)}`
+        : '';
+      
       const response = await fetch('http://localhost:11434/api/generate', {
         method: 'POST',
         headers: {
@@ -92,7 +97,7 @@ export default function ChatPage({ params }: { params: { id: string } }) {
         },
         body: JSON.stringify({
           model: 'qwen2.5:0.5b',
-          prompt: messageContent,
+          prompt: `${messageContent}${mealPlanContext}`,
           stream: false,
         }),
       });
@@ -151,32 +156,34 @@ export default function ChatPage({ params }: { params: { id: string } }) {
     if (!mealPlan) return null;
     
     return (
-      <div className="mb-6 p-4 bg-gray-800 rounded-lg">
-        <h3 className="text-lg font-semibold mb-3 flex items-center">
+      <div className="mb-6 p-6 bg-[#2a2a2a] rounded-xl shadow-lg border border-[#3a3a3a]">
+        <h3 className="text-lg font-medium text-white mb-4 flex items-center">
           <Utensils className="w-5 h-5 mr-2 text-green-400" />
           Your Meal Plan
         </h3>
         <div className="grid gap-4 md:grid-cols-3">
           {mealPlan.meals.map((meal: any, index: number) => (
-            <div key={index} className="bg-gray-700 p-4 rounded-lg">
-              <h4 className="font-medium text-green-300 mb-2">{meal.name}</h4>
+            <div key={index} className="bg-[#333] p-4 rounded-lg hover:bg-[#3a3a3a] transition-colors">
+              <h4 className="font-medium text-teal-400 mb-2">
+                {meal.name}
+              </h4>
               <p className="text-sm text-gray-300 mb-3">{meal.description}</p>
-              <div className="grid grid-cols-2 gap-2 text-xs text-gray-400">
+              <div className="grid grid-cols-2 gap-3 text-xs text-gray-400">
                 <div className="flex items-center">
-                  <Flame className="w-3 h-3 mr-1 text-red-400" />
-                  {meal.calories} cal
+                  <Flame className="w-3 h-3 mr-2 text-red-400" />
+                  <span className="text-white">{meal.calories} cal</span>
                 </div>
                 <div className="flex items-center">
-                  <Egg className="w-3 h-3 mr-1 text-blue-400" />
-                  {meal.protein}g protein
+                  <Egg className="w-3 h-3 mr-2 text-blue-400" />
+                  <span className="text-white">{meal.protein}g protein</span>
                 </div>
                 <div className="flex items-center">
-                  <Carrot className="w-3 h-3 mr-1 text-yellow-400" />
-                  {meal.carbs}g carbs
+                  <Carrot className="w-3 h-3 mr-2 text-yellow-400" />
+                  <span className="text-white">{meal.carbs}g carbs</span>
                 </div>
                 <div className="flex items-center">
-                  <div className="w-3 h-3 mr-1 rounded-full bg-yellow-400"></div>
-                  {meal.fat}g fat
+                  <div className="w-3 h-3 mr-2 rounded-full bg-yellow-400"></div>
+                  <span className="text-white">{meal.fat}g fat</span>
                 </div>
               </div>
             </div>

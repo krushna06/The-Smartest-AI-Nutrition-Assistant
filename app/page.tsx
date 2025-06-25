@@ -32,12 +32,34 @@ export default function Home() {
     if (!input.trim()) return;
     
     const chatId = crypto.randomUUID();
+    const chatTitle = input.length > 30 ? `${input.substring(0, 30)}...` : input;
+    
+    const formattedMealPlan = selectedMealPlan ? {
+      id: `mealplan-${Date.now()}`,
+      meals: selectedMealPlan.map(meal => ({
+        name: meal.name,
+        description: meal.items.join(', '),
+        calories: 0,
+        protein: 0,
+        carbs: 0,
+        fat: 0,
+      }))
+    } : undefined;
+    
     saveChat({
       id: chatId,
-      title: input.length > 30 ? `${input.substring(0, 30)}...` : input,
+      title: chatTitle,
+      mealPlan: formattedMealPlan,
     });
     
-    router.push(`/chat/${chatId}?message=${encodeURIComponent(input)}`);
+    const params = new URLSearchParams({
+      message: input,
+      ...(selectedMealPlan && { 
+        mealPlan: JSON.stringify(selectedMealPlan) 
+      })
+    });
+    
+    router.push(`/chat/${chatId}?${params.toString()}`);
   };
   
   return (
