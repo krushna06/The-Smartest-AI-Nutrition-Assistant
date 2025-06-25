@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Paperclip, Mic } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { Paperclip, Mic, MicOff } from "lucide-react";
 import dynamic from "next/dynamic";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
@@ -18,6 +18,9 @@ export default function Home() {
   const [input, setInput] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
+  const audioChunks = useRef<Blob[]>([]);
   const router = useRouter();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -51,7 +54,210 @@ export default function Home() {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    let stream: MediaStream | null = null;
+    let recorder: MediaRecorder | null = null;
+
+    const cleanup = () => {
+      if (recorder && recorder.state !== 'inactive') {
+        recorder.stop();
+      }
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+      }
+    };
+
+    const initRecorder = async () => {
+      try {
+        const possibleTypes = [
+          'audio/webm;codecs=opus',
+          'audio/webm',
+          'audio/ogg;codecs=opus',
+          'audio/ogg',
+          'audio/wav',
+          'audio/mp4',
+        ];
+        
+        const supportedTypes = possibleTypes.filter(type => {
+          return MediaRecorder.isTypeSupported(type);
+        });
+        
+        const mimeType = supportedTypes[0] || '';
+        console.log('Using MIME type:', mimeType || 'default');
+
+        stream = await navigator.mediaDevices.getUserMedia({ 
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            sampleRate: 16000,
+            channelCount: 1,
+          },
+          video: false
+        });
+
+        const options = mimeType ? { mimeType } : undefined;
+        recorder = new MediaRecorder(stream, options);
+        
+        recorder.ondataavailable = (event) => {
+          if (event.data && event.data.size > 0) {
+            console.log('Audio data available, size:', event.data.size);
+            audioChunks.current.push(event.data);
+          }
+        };
+        
+        recorder.onstop = async () => {
+          console.log('Recording stopped, processing audio...');
+          if (audioChunks.current.length === 0) {
+            console.warn('No audio data recorded');
+            return;
+          }
+
+          try {
+            const audioBlob = new Blob(audioChunks.current, { 
+              type: audioChunks.current[0].type || 'audio/wav'
+            });
+            
+            console.log('Sending audio blob, size:', audioBlob.size, 'type:', audioBlob.type);
+            await sendAudioToBackend(audioBlob);
+          } catch (error) {
+            console.error('Error processing audio:', error);
+          } finally {
+            audioChunks.current = [];
+          }
+        };
+        
+        setMediaRecorder(recorder);
+      } catch (err) {
+        console.error('Error initializing audio recorder:', err);
+        alert('Error accessing microphone. Please check permissions and try again.');
+      }
+    };
+
+    initRecorder();
+
+    return cleanup;
+  }, []);
+
+  const toggleRecording = () => {
+    if (!mediaRecorder) {
+      console.error('MediaRecorder not initialized');
+      alert('Microphone access not available. Please check your browser permissions.');
+      return;
+    }
+
+    if (isRecording) {
+      console.log('Stopping recording...');
+      try {
+        mediaRecorder.stop();
+        mediaRecorder.stream.getTracks().forEach(track => track.stop());
+      } catch (error) {
+        console.error('Error stopping recording:', error);
+      } finally {
+        setIsRecording(false);
+      }
+    } else {
+      console.log('Starting recording...');
+      audioChunks.current = [];
+      try {
+        mediaRecorder.start(100);
+        setIsRecording(true);
+      } catch (error) {
+        console.error('Error starting recording:', error);
+        alert('Failed to start recording. Please try again.');
+      }
+    }
+  };
+
+  const sendAudioToBackend = async (audioBlob: Blob) => {
+    try {
+      console.log('Sending audio to backend, size:', audioBlob.size, 'type:', audioBlob.type);
+      
+      const formData = new FormData();
+      
+      const mimeType = 'audio/webm;codecs=opus';
+      const fileName = 'recording.webm';
+      
+      const cleanBlob = new Blob([audioBlob], { type: mimeType });
+      formData.append('audio_file', cleanBlob, fileName);
+      
+      console.log('Sending request to backend...');
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000);
+      
+      let response;
+      let responseData;
+      
+      try {
+        response = await fetch('http://localhost:8000/api/speech-to-text', {
+          method: 'POST',
+          body: formData,
+          signal: controller.signal,
+          headers: {
+            'Accept': 'application/json'
+          }
+        });
+        
+        clearTimeout(timeoutId);
+        
+        try {
+          responseData = await response.json();
+          console.log('Received response from backend:', responseData);
+        } catch (jsonError) {
+          const errorText = await response.text();
+          console.error('Failed to parse JSON response:', errorText);
+          throw new Error('Received an invalid response from the server');
+        }
+        
+        if (!response.ok) {
+          const errorMessage = responseData?.error || response.statusText || 'Unknown server error';
+          console.error('Backend error response:', errorMessage);
+          throw new Error(`Server error: ${errorMessage}`);
+        }
+        
+        if (responseData?.success && responseData.text) {
+          const transcribedText = responseData.text.trim();
+          if (transcribedText) {
+            console.log('Transcription successful:', transcribedText);
+            setInput(prev => (prev ? `${prev} ${transcribedText}` : transcribedText).trim());
+            return;
+          }
+        }
+        
+        const errorMessage = responseData?.error || 'No speech was detected or recognized';
+        console.error('Transcription failed:', errorMessage);
+        throw new Error(errorMessage);
+        
+      } catch (error: unknown) {
+        if (error instanceof Error && error.name === 'AbortError') {
+          throw new Error('Request timed out. Please try again.');
+        }
+        throw error;
+      }
+      
+    } catch (error) {
+      console.error('Error in sendAudioToBackend:', error);
+      let errorMessage = 'An error occurred while processing your voice input.';
+      
+      if (error instanceof Error) {
+        if (error.message.includes('Failed to fetch')) {
+          errorMessage = 'Unable to connect to the server. Please check your internet connection.';
+        } else if (error.message.includes('time')) {
+          errorMessage = 'The request took too long. Please try again.';
+        } else if (error.message.includes('network')) {
+          errorMessage = 'Network error. Please check your connection and try again.';
+        } else {
+          errorMessage = error.message.split(':').pop()?.trim() || errorMessage;
+        }
+      }
+      
+      alert(`Error: ${errorMessage}`);
+      throw error;
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() && !selectedFile) return;
     
@@ -93,7 +299,6 @@ export default function Home() {
     
     router.push(`/chat/${chatId}?${params.toString()}`);
     
-    // Clean up
     if (previewUrl) {
       URL.revokeObjectURL(previewUrl);
     }
@@ -185,8 +390,13 @@ export default function Home() {
                     </button>
                   </div>
 
-                  <button type="button" className="text-gray-400 hover:text-gray-300 p-1 transition-colors" aria-label="Voice input">
-                    <Mic size={20} />
+                  <button 
+                    type="button" 
+                    className={`p-1 transition-colors ${isRecording ? 'text-red-500 animate-pulse' : 'text-gray-400 hover:text-gray-300'}`}
+                    onClick={toggleRecording}
+                    aria-label={isRecording ? 'Stop recording' : 'Start voice input'}
+                  >
+                    {isRecording ? <MicOff size={20} /> : <Mic size={20} />}
                   </button>
                 </div>
               </div>
