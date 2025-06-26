@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect } from "react";
 import { MessageSquare, Search, Menu, Command, Trash2, Clock } from "lucide-react";
+import { FaHeartbeat } from "react-icons/fa";
 import SpotlightSearch from "./SpotlightSearch";
 import { getChats, deleteChat, Chat } from "../utils/chatStorage";
 import { useRouter } from "next/navigation";
@@ -114,6 +115,21 @@ export default function Sidebar() {
         </button>
       </div>
 
+      <div className="px-2 pb-2">
+        <button
+          onClick={() => {}}
+          className="w-full flex items-center text-[#a1a1aa] rounded-lg py-2 px-3 overflow-hidden"
+          title="Connect Google Fit"
+        >
+          <FaHeartbeat size={20} className="text-[#a1a1aa] flex-shrink-0" />
+          <span
+            className={`ml-3 transition-opacity duration-200 ${isCollapsed ? "opacity-0 w-0" : "opacity-100"}`}
+          >
+            Connect Fit
+          </span>
+        </button>
+      </div>
+
       <SpotlightSearch
         isOpen={isSearchOpen}
         onClose={() => setIsSearchOpen(false)}
@@ -130,7 +146,7 @@ export default function Sidebar() {
                 <div
                   key={chat.id}
                   onClick={() => handleChatClick(chat.id)}
-                  className="group flex items-center justify-between p-2 rounded-lg hover:bg-white/5 cursor-pointer transition-colors"
+                  className="group flex items-center justify-between p-2 rounded-lg cursor-pointer"
                 >
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-white truncate">
@@ -143,7 +159,7 @@ export default function Sidebar() {
                   </div>
                   <button
                     onClick={(e) => handleDeleteChat(e, chat.id)}
-                    className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-400 p-1"
+                    className="opacity-0 group-hover:opacity-100 text-gray-400 p-1"
                     aria-label="Delete chat"
                   >
                     <Trash2 size={16} />
