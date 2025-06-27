@@ -71,14 +71,32 @@ export default function MealGenerator({ isOpen, onClose, onMealGenerated }: Meal
 - Activity Level: ${formData.activityLevel}
 - Dietary Restrictions: ${formData.dietaryRestrictions || 'None'}
 
-IMPORTANT: Please provide a meal plan with Breakfast, Lunch, and Dinner. For EACH meal, include EXACTLY 3 food items.
+IMPORTANT: Please provide a detailed and specific meal plan with Breakfast, Lunch, and Dinner. For EACH meal, include EXACTLY 3 food items.
+
+RULES:
+1. Capitalize the first letter of each food item (e.g., '1 Medium banana', '2 Boiled eggs')
+2. Be specific about quantities (e.g., '1 Medium banana', '2 Boiled eggs')
+3. For fruits, ALWAYS specify:
+   - Exact type (e.g., 'Apple', 'Banana', 'Orange')
+   - Exact quantity (e.g., '1 medium', '2 small', '1 cup')
+   - Example: '1 Medium banana', '1 cup Mixed berries', '2 Small apples'
+4. For vegetables, specify type and preparation (e.g., '1 cup Steamed broccoli', '2 cups Roasted mixed vegetables')
+5. For proteins, include portion sizes (e.g., '100g Grilled chicken breast', '150g Baked salmon fillet')
+6. For Lunch and Dinner, provide more elaborate options with 2-3 components each
+7. Avoid generic terms like 'fruits', 'vegetables', or 'salad' without details
+8. DO NOT include 'Item 1', 'Item 2', etc. in the response
+
+BREAKFAST: Keep it simple with 3 separate items
+LUNCH: More substantial with 1 main and 2 sides (e.g., 'Grilled chicken with quinoa and roasted vegetables')
+DINNER: Most substantial meal with 1 protein, 1 grain, and 1 vegetable (e.g., 'Baked salmon with wild rice and steamed asparagus')
 
 Format your response like this:
 
 Breakfast
-• Item 1
-• Item 2
-• Item 3
+• 1/2 cup Oatmeal with 1/2 cup Mixed berries
+• 150g Greek yogurt with 1 tbsp Honey
+• 1 Boiled egg
+• 1 slice Whole wheat toast
 
 Lunch
 • Item 1
@@ -232,15 +250,26 @@ currentMeal.items = [...new Set([...currentMeal.items, ...subItems])].slice(0, 3
             );
             currentMealIndex = foundIndex >= 0 ? foundIndex : -1;
           } else if (currentMealIndex >= 0 && defaultMeals[currentMealIndex].items.length < 3) {
-            const item = line
+            let item = line
               .replace(/^[•-]\s*/, '')
               .replace(/^\d+[.)]?\s*/, '')
+              .replace(/^Item\s+\d+[\s:-]*/i, '')
               .replace(/\|/g, '')
               .trim();
               
+            if (item && !/^\d/.test(item)) {
+              item = item.charAt(0).toUpperCase() + item.slice(1);
+            }
+              
             if (item && !item.match(/^[-=*_]+$/)) {
               const subItems = item.split(/<br>|,|•/)
-                .map((part: string) => part.trim())
+                .map((part: string) => {
+                  part = part.trim();
+                  if (part && !/^\d/.test(part)) {
+                    part = part.charAt(0).toUpperCase() + part.slice(1);
+                  }
+                  return part;
+                })
                 .filter((part: string) => part);
                 
               defaultMeals[currentMealIndex].items = [
