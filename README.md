@@ -9,6 +9,7 @@ A Streamlit-based AI Nutrition Assistant that helps users track their diet, get 
 - 📷 Food image analysis
 - 🍽️ Personalized meal planning
 - 📊 Nutritional information
+- 🏗️ Modular and maintainable codebase
 
 ## Prerequisites
 
