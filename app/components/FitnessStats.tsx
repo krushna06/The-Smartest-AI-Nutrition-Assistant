@@ -86,8 +86,10 @@ export default function FitnessStats({ isCollapsed, onDisconnect }: FitnessStats
           sleepDuration: { value: data.sleepDuration, success: data.metrics.sleepDuration.success },
         },
       });
-    } catch (error) {
-      console.error('Error fetching fitness data:', error);
+    } catch (error: unknown) {
+      if (error instanceof Error && !error.message.includes('datasource not found or not readable')) {
+        console.error('Error fetching fitness data:', error);
+      }
       setFitnessData(prev => ({
         ...prev,
         isLoading: false,

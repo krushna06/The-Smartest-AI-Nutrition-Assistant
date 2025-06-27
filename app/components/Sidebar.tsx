@@ -9,7 +9,7 @@ import { useRouter } from "next/navigation";
 import { formatDistanceToNow } from "date-fns";
 
 export default function Sidebar() {
-  const [isCollapsed, setIsCollapsed] = useState(true);
+  const [isCollapsed, setIsCollapsed] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [chats, setChats] = useState<Chat[]>([]);
