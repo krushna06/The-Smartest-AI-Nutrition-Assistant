@@ -133,10 +133,10 @@ export async function getFitnessData(accessToken: string): Promise<FitnessData> 
         auth,
       });
       dataSources = dataSourcesResponse.data.dataSource || [];
-      console.log('Available data sources:', dataSources.map((ds: any) => ({
-        type: ds.dataType.name,
-        id: ds.dataStreamId
-      })));
+      // console.log('Available data sources:', dataSources.map((ds: any) => ({
+      //   type: ds.dataType.name,
+      //   id: ds.dataStreamId
+      // })));
     } catch (error) {
       console.error('Error fetching data sources:', error);
     }
@@ -224,7 +224,7 @@ export async function getFitnessData(accessToken: string): Promise<FitnessData> 
       sleepDuration: { value: sleepDuration, success: sleepDuration !== null },
     };
 
-    console.log('Fitness data metrics:', metrics);
+    // console.log('Fitness data metrics:', metrics);
 
     return {
       steps,
