@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { MessageSquare, Search, Menu, Command, Trash2, Clock } from "lucide-react";
-import { FaHeartbeat } from "react-icons/fa";
+import { MessageSquare, Search, Menu, Command, Trash2, Clock, Loader2 } from "lucide-react";
+import { FaHeartbeat, FaGoogle } from "react-icons/fa";
 import SpotlightSearch from "./SpotlightSearch";
 import { getChats, deleteChat, Chat } from "../utils/chatStorage";
 import { useRouter } from "next/navigation";
@@ -116,18 +116,16 @@ export default function Sidebar() {
       </div>
 
       <div className="px-2 pb-2">
-        <button
-          onClick={() => {}}
-          className="w-full flex items-center text-[#a1a1aa] rounded-lg py-2 px-3 overflow-hidden"
+        <a
+          href="/api/auth/google"
+          className="w-full flex items-center text-[#a1a1aa] hover:text-white rounded-lg py-2 px-3 overflow-hidden transition-colors"
           title="Connect Google Fit"
         >
-          <FaHeartbeat size={20} className="text-[#a1a1aa] flex-shrink-0" />
-          <span
-            className={`ml-3 transition-opacity duration-200 ${isCollapsed ? "opacity-0 w-0" : "opacity-100"}`}
-          >
+          <FaGoogle size={20} className="flex-shrink-0" />
+          <span className={`ml-3 transition-opacity duration-200 ${isCollapsed ? 'opacity-0 w-0' : 'opacity-100'}`}>
             Connect Fit
           </span>
-        </button>
+        </a>
       </div>
 
       <SpotlightSearch

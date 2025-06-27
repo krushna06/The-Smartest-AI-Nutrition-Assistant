@@ -12,6 +12,9 @@ const Sidebar = dynamic(() => import("./components/Sidebar"), { ssr: false });
 const MealPlanCard = dynamic(() => import("./components/MealPlanCard"), {
   ssr: false,
 });
+const FitnessStats = dynamic(() => import("./components/FitnessStats"), {
+  ssr: false,
+});
 
 export default function Home() {
   const [selectedMealPlan, setSelectedMealPlan] = useState<Meal[] | null>(null);
@@ -317,11 +320,30 @@ export default function Home() {
     }
   };
   
+  const [isConnected, setIsConnected] = useState(false);
+
+  useEffect(() => {
+    const checkConnection = async () => {
+      try {
+        const response = await fetch('/api/fitness/check');
+        if (response.ok) {
+          const data = await response.json();
+          setIsConnected(data.isConnected);
+        }
+      } catch (error) {
+        console.error('Error checking connection:', error);
+      }
+    };
+
+    checkConnection();
+  }, []);
+
   return (
     <>
       <Sidebar />
       <main className="flex-1 flex flex-col items-center justify-center p-4 overflow-auto relative">
         <MealPlanCard onSelect={handleMealPlanSelect} />
+        {isConnected && <FitnessStats isCollapsed={false} />}
         <div className="w-full max-w-2xl">
           <h1 className="text-white text-2xl font-medium text-center mb-8">
             What can I help you with?
