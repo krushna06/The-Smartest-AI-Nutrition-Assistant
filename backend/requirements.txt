@@ -1,8 +1,0 @@
-SpeechRecognition==3.10.0
-fastapi>=0.68.0
-uvicorn>=0.15.0
-python-multipart>=0.0.5
-SpeechRecognition>=3.8.1
-pydantic>=1.8.0
-ffmpeg-python>=0.2.0
-python-dotenv>=0.19.02

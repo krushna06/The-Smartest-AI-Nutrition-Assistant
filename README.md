@@ -1,126 +1,132 @@
-# 🧠 The Smartest AI Nutrition Assistant
+# AI Nutrition Assistant with Ollama
 
-## Overview
+A Streamlit-based AI Nutrition Assistant that helps users track their diet, get nutrition advice, and generate personalized meal plans using local AI models through Ollama.
 
-**The Smartest AI Nutrition Assistant** is an intelligent, all-in-one platform that uses state-of-the-art generative AI to deliver hyper-personalized nutrition guidance. Unlike traditional one-size-fits-all apps, this assistant learns, reasons, and adapts like a real nutrition expert—offering dynamic meal plans, contextual recommendations, and intuitive interactions via **text, voice, and image** inputs.
+## Features
 
-This project **does not rely on external LLM APIs** like ChatGPT, Deepseek, or Claude. Instead, it uses **a local Ollama-hosted Mistral model** and open-source tools such as **Teachable Machine** for image classification, along with **Python** and **SQL** for its core logic and data management.
+- 💬 Chat interface for nutrition advice
+- 🎤 Voice input support
+- 📷 Food image analysis
+- 🍽️ Personalized meal planning
+- 📊 Nutritional information
 
----
+## Prerequisites
 
-## 🚀 Features
+- Python 3.8 or higher
+- [Ollama](https://ollama.ai/) installed and running locally
+- Microphone (for voice input)
+- Webcam (for image capture with vision models)
 
-* **Multimodal Input Understanding**
-  Accepts and interprets:
+### Setting up Ollama
 
-  * ✍️ Text queries (e.g., “Plan a vegan diet for muscle gain”)
-  * 🎤 Voice input (via speech-to-text)
-  * 📸 Image input (e.g., food photos, nutrition labels) using **Google Teachable Machine**
+1. Download and install Ollama from [ollama.ai](https://ollama.ai/)
+2. Start the Ollama server
+3. Pull the desired models (e.g., `llama3`, `mistral`, `llava`):
+   ```bash
+   ollama pull qwen2.5:0.5b
+   # For image analysis (optional):
+   ollama pull llava
+   ```
 
-* **Personalized Meal Plan Generation**
-  Tailored to:
+## Installation
 
-  * Health goals (e.g., weight loss, muscle gain)
-  * Medical conditions (e.g., diabetes, hypertension)
-  * Activity levels and preferences (e.g., keto, vegan, halal)
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/yourusername/ai-nutrition-assistant.git
+   cd ai-nutrition-assistant/python-rewrite
+   ```
 
-* **Dynamic Feedback Loop**
-  Learns and adapts based on:
+2. Create a virtual environment and activate it:
+   ```bash
+   python -m venv venv
+   .\venv\Scripts\activate  # On Windows
+   # or
+   source venv/bin/activate  # On macOS/Linux
+   ```
 
-  * User check-ins and meal logs
-  * Real-time health data (optional integrations)
+3. Install the required packages:
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-* **Contextual Explanations**
-  Provides nutrition science-based justifications:
+4. (Optional) Create a `.env` file in the project root for any future environment variables:
+   ```
+   # Add any custom configurations here
+   ```
 
-  * “Why is this food better?”
-  * “What happens if I skip this meal?”
+## Quick Start Guide
 
-* **Edge-capable Architecture**
-  Designed for on-device inference using **Ollama with Mistral** and no reliance on cloud APIs
+1. **Start the Ollama server** (if not already running):
+   ```bash
+   ollama serve
+   ```
 
----
+2. **In a new terminal, run the Streamlit app**:
+   ```bash
+   streamlit run main.py
+   ```
 
-## 🧠 System Architecture
+3. **Open your browser** to `http://localhost:8501`
 
-```
-+-------------------------+
-|  User Interface (CLI,   |
-|  Web, or Mobile)        |
-+-----------+-------------+
-            |
-            v
-+-------------------------+
-|  Multimodal Input Engine|
-|  - NLP                  |
-|  - CV (Teachable Machine)|
-|  - Voice Parsing        |
-+-----------+-------------+
-            |
-            v
-+-------------------------+
-|  AI Reasoning Engine    |
-|  - Local Mistral LLM    |
-|  - Goal-based Planner   |
-+-----------+-------------+
-            |
-            v
-+-------------------------+
-|  Knowledge Base         |
-|  - Food databases       |
-|  - Medical guidelines   |
-|  - User profiles        |
-+-----------+-------------+
-            |
-            v
-+-------------------------+
-|  Output Generator       |
-|  - Meal plans           |
-|  - Explanations         |
-+-------------------------+
-```
+4. **Using the app**:
+   - **Chat**: Type your nutrition-related questions in the chat box
+   - **Voice Input**: Click the "Start Voice Input" button and speak your query
+   - **Food Analysis**: Upload a food image and click "Analyze Food"
+   - **Meal Planning**: Customize and generate personalized meal plans
+   - **Model Selection**: Change the AI model in the sidebar (requires the model to be pulled first)
 
----
+## Features in Detail
 
-## 🛠 Tech Stack
+### Chat Interface
+- Ask any nutrition-related questions
+- Get detailed, personalized responses
+- Conversation history is maintained during the session
 
-| Component            | Technology Used                                                |
-| -------------------- | -------------------------------------------------------------- |
-| Language             | Python, SQL                                                    |
-| AI Models            | **Local Mistral (via Ollama)**, Nutrition-specific fine-tuning |
-| Image Understanding  | **Google Teachable Machine** (for food/image classification)   |
-| Voice Input          | Whisper (open-source STT)                                      |
-| Meal Planning Engine | Rule-based + LLM hybrid logic                                  |
-| Storage              | SQLite                                                         |
-| Frontend (Optional)  | Flask                                                          |
+### Voice Input
+- Click the microphone button to start speaking
+- Your speech will be transcribed using Whisper
+- The transcription will be sent to the AI for a response
 
----
+### Food Image Analysis
+- Upload images of food
+- Get nutritional analysis (requires a vision model like LLaVA)
+- Understand portion sizes and ingredients
 
-## 🔐 Privacy & Security
+### Meal Planning
+- Customize based on dietary preferences and allergies
+- Set daily calorie targets
+- Get detailed meal plans with recipes and nutritional info
 
-* **Runs entirely locally** — including model inference and image classification.
-* **No external API calls** — all logic and data stay on-device.
-* **Data is encrypted** and stored locally or optionally in secure on-prem SQL databases.
+## How It Works
 
----
+- The app uses OpenAI's GPT-4 for natural language understanding and generation
+- Food images are analyzed using GPT-4 Vision
+- Voice input is processed using the SpeechRecognition library
+- Session state maintains conversation history
 
-## 🤝 Contributing
+## Customization
 
-Pull requests and issue reports are welcome! To contribute:
+You can customize the app by:
 
-```bash
-git clone https://github.com/krushna06/The-Smartest-AI-Nutrition-Assistant.git
-cd The-Smartest-AI-Nutrition-Assistant-main
-```
+1. **Models**: 
+   - Change the default model in `DEFAULT_MODEL`
+   - Add more models to the `available_models` list in the sidebar
 
----
+2. **Prompts**:
+   - Modify the system prompts in the code for different behaviors
+   - Adjust the meal plan generation prompt for different formats
 
-## 📜 License
+3. **UI**:
+   - Customize the Streamlit interface in `main.py`
+   - Add more customization options for meal planning
+   - Extend the dietary preferences and allergies lists
 
-MIT License — free to use, modify, and distribute.
+4. **Features**:
+   - Add more interactive elements
+   - Implement user profiles
+   - Add meal tracking functionality
+   - Integrate with nutrition databases for more accurate information
 
----
+## License
 
-## 👩‍⚕️ Vision
-
-To build an AI that **thinks, learns, and cares like a true nutrition expert**—bridging the gap between static diet apps and personalized human counseling.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
