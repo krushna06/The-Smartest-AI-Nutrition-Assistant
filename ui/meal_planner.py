@@ -25,6 +25,23 @@ class MealPlanner:
         col1, col2 = st.columns(2)
         
         with col1:
+            self.age = st.number_input("Age", min_value=1, max_value=120, value=30, step=1)
+            self.gender = st.selectbox("Gender", ["Male", "Female", "Other"])
+            self.weight = st.number_input("Weight (kg)", min_value=20, max_value=300, value=70, step=1)
+            
+        with col2:
+            self.height = st.number_input("Height (cm)", min_value=100, max_value=250, value=170, step=1)
+            self.goal = st.selectbox("Goal", ["Lose Weight", "Maintain Weight", "Gain Weight"])
+            self.activity_level = st.select_slider(
+                "Activity Level",
+                options=["Sedentary", "Lightly Active", "Moderately Active", "Very Active", "Extremely Active"]
+            )
+            
+        st.markdown("---")
+        st.subheader("Dietary Preferences")
+        
+        col3, col4 = st.columns(2)
+        with col3:
             self.dietary_prefs = st.multiselect(
                 "Dietary Preferences",
                 ["Vegetarian", "Vegan", "Keto", "Paleo", "Mediterranean", "Low-Carb", "Gluten-Free"],
@@ -37,16 +54,10 @@ class MealPlanner:
                 self.config["default_calories"]
             )
             
-        with col2:
+        with col4:
             self.allergies = st.multiselect(
                 "Allergies/Intolerances",
                 ["Peanuts", "Tree Nuts", "Shellfish", "Dairy", "Eggs", "Soy", "Wheat", "Fish"]
-            )
-            self.meals_per_day = st.slider(
-                "Meals per Day", 
-                self.config["min_meals_per_day"], 
-                self.config["max_meals_per_day"], 
-                self.config["default_meals_per_day"]
             )
 
     def _generate_meal_plan(self):
@@ -83,8 +94,13 @@ class MealPlanner:
         """Build the prompt for generating a meal plan"""
         return f"""
         Create a CONCISE meal plan with these requirements:
+        - Age: {self.age}
+        - Gender: {self.gender}
+        - Weight: {self.weight} kg
+        - Height: {self.height} cm
+        - Goal: {self.goal}
+        - Activity Level: {self.activity_level}
         - Target calories: {self.calories} kcal
-        - Meals per day: {self.meals_per_day}
         - Dietary preferences: {', '.join(self.dietary_prefs) if self.dietary_prefs else 'None'}
         - Allergies/Intolerances: {', '.join(self.allergies) if self.allergies else 'None'}
 

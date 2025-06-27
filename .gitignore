@@ -1,1 +1,5 @@
 .venv
+config/__pycache__
+services/__pycache__
+ui/__pycache__
+utils/__pycache__

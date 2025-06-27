@@ -1,6 +1,8 @@
-# AI Nutrition Assistant with Ollama
+# The Smartest AI Nutrition Assistant
 
-A Streamlit-based AI Nutrition Assistant that helps users track their diet, get nutrition advice, and generate personalized meal plans using local AI models through Ollama.
+**The Smartest AI Nutrition Assistant** is an intelligent, all-in-one platform that uses state-of-the-art generative AI to deliver hyper-personalized nutrition guidance. Unlike traditional one-size-fits-all apps, this assistant learns, reasons, and adapts like a real nutrition expert—offering dynamic meal plans, contextual recommendations, and intuitive interactions via **text, voice, and image** inputs.
+
+This project **does not rely on external LLM APIs** like ChatGPT, Deepseek, or Claude. Instead, it uses **a local Ollama-hosted  model** and open-source tools such as **Teachable Machine** for image classification, along with **Python** and **SQL** for its core logic and data management.
 
 ## Features
 
@@ -31,13 +33,7 @@ A Streamlit-based AI Nutrition Assistant that helps users track their diet, get 
 
 ## Installation
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/yourusername/ai-nutrition-assistant.git
-   cd ai-nutrition-assistant/python-rewrite
-   ```
-
-2. Create a virtual environment and activate it:
+1. Create a virtual environment and activate it:
    ```bash
    python -m venv venv
    .\venv\Scripts\activate  # On Windows
@@ -48,11 +44,6 @@ A Streamlit-based AI Nutrition Assistant that helps users track their diet, get 
 3. Install the required packages:
    ```bash
    pip install -r requirements.txt
-   ```
-
-4. (Optional) Create a `.env` file in the project root for any future environment variables:
-   ```
-   # Add any custom configurations here
    ```
 
 ## Quick Start Guide
@@ -100,8 +91,8 @@ A Streamlit-based AI Nutrition Assistant that helps users track their diet, get 
 
 ## How It Works
 
-- The app uses OpenAI's GPT-4 for natural language understanding and generation
-- Food images are analyzed using GPT-4 Vision
+- The app uses Ollama's Qwen-2.5 for natural language understanding and generation
+- Food images are analyzed using Ollama's LLaVA
 - Voice input is processed using the SpeechRecognition library
 - Session state maintains conversation history
 
