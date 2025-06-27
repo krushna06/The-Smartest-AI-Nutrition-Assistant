@@ -7,9 +7,10 @@ import { FaHeartbeat, FaWalking } from 'react-icons/fa';
 
 interface FitnessStatsProps {
   isCollapsed: boolean;
+  onDisconnect?: () => void;
 }
 
-export default function FitnessStats({ isCollapsed }: FitnessStatsProps) {
+export default function FitnessStats({ isCollapsed, onDisconnect }: FitnessStatsProps) {
   const [fitnessData, setFitnessData] = useState<{
     steps: number;
     heartRate: number | null;
@@ -75,15 +76,31 @@ export default function FitnessStats({ isCollapsed }: FitnessStatsProps) {
     >
       <div className="p-4 bg-[#1e1e1e] border-b border-[#333333]">
         <div className="flex justify-between items-center">
-          <h3 className="text-lg font-medium text-white">Fitness Stats</h3>
-          <button
-            onClick={fetchFitnessData}
-            disabled={fitnessData.isLoading}
-            className={`p-1.5 rounded-full hover:bg-[#3a3a3a] transition-colors ${fitnessData.isLoading ? 'animate-spin' : ''}`}
-            title="Refresh stats"
-          >
-            <FiRefreshCw className="w-4 h-4 text-[#8f8f8f]" />
-          </button>
+          <div className="flex items-center">
+            <h3 className="text-lg font-medium text-white">Fitness Stats</h3>
+            <span className="ml-2 flex items-center text-xs px-2 py-0.5 bg-green-500/20 text-green-400 rounded-full">
+              Connected
+            </span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={fetchFitnessData}
+              disabled={fitnessData.isLoading}
+              className={`p-1.5 rounded-full hover:bg-[#3a3a3a] transition-colors ${fitnessData.isLoading ? 'animate-spin' : ''}`}
+              title="Refresh stats"
+            >
+              <FiRefreshCw className="w-4 h-4 text-[#8f8f8f]" />
+            </button>
+            <button
+              onClick={onDisconnect}
+              className="p-1.5 rounded-full hover:bg-red-500/20 transition-colors text-red-400 hover:text-red-300"
+              title="Disconnect"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+              </svg>
+            </button>
+          </div>
         </div>
       </div>
       
