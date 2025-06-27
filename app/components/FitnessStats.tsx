@@ -2,8 +2,32 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { FiRefreshCw } from 'react-icons/fi';
+import { 
+  FiRefreshCw, 
+  FiTrendingUp, 
+  FiClock, 
+  FiZap, 
+  FiNavigation2, 
+  FiActivity, 
+  FiMoon 
+} from 'react-icons/fi';
 import { FaHeartbeat, FaWalking } from 'react-icons/fa';
+
+import { FitnessData } from '../services/googleFitService';
+
+interface FitnessStatsData extends Omit<FitnessData, 'metrics'> {
+  metrics: {
+    steps: { value: number; success: boolean };
+    activeMinutes: { value: number; success: boolean };
+    calories: { value: number; success: boolean };
+    distance: { value: number; success: boolean };
+    heartRate: { value: number | null; success: boolean };
+    sleepDuration: { value: number | null; success: boolean };
+  };
+  isLoading: boolean;
+  isConnected: boolean;
+  error?: string;
+}
 
 interface FitnessStatsProps {
   isCollapsed: boolean;
@@ -11,18 +35,24 @@ interface FitnessStatsProps {
 }
 
 export default function FitnessStats({ isCollapsed, onDisconnect }: FitnessStatsProps) {
-  const [fitnessData, setFitnessData] = useState<{
-    steps: number;
-    heartRate: number | null;
-    lastUpdated: string;
-    isLoading: boolean;
-    isConnected: boolean;
-  }>({
+  const [fitnessData, setFitnessData] = useState<FitnessStatsData>({
     steps: 0,
     heartRate: null,
+    activeMinutes: 0,
+    calories: 0,
+    distance: 0,
+    sleepDuration: null,
     lastUpdated: '',
     isLoading: false,
     isConnected: false,
+    metrics: {
+      steps: { value: 0, success: false },
+      activeMinutes: { value: 0, success: false },
+      calories: { value: 0, success: false },
+      distance: { value: 0, success: false },
+      heartRate: { value: null, success: false },
+      sleepDuration: { value: null, success: false },
+    },
   });
 
   const fetchFitnessData = async () => {
@@ -38,9 +68,21 @@ export default function FitnessStats({ isCollapsed, onDisconnect }: FitnessStats
       setFitnessData({
         steps: data.steps,
         heartRate: data.heartRate,
+        activeMinutes: data.activeMinutes,
+        calories: data.calories,
+        distance: data.distance,
+        sleepDuration: data.sleepDuration,
         lastUpdated: data.lastUpdated,
         isLoading: false,
         isConnected: true,
+        metrics: {
+          steps: { value: data.steps, success: data.metrics.steps.success },
+          activeMinutes: { value: data.activeMinutes, success: data.metrics.activeMinutes.success },
+          calories: { value: data.calories, success: data.metrics.calories.success },
+          distance: { value: data.distance, success: data.metrics.distance.success },
+          heartRate: { value: data.heartRate, success: data.metrics.heartRate.success },
+          sleepDuration: { value: data.sleepDuration, success: data.metrics.sleepDuration.success },
+        },
       });
     } catch (error) {
       console.error('Error fetching fitness data:', error);
@@ -61,11 +103,6 @@ export default function FitnessStats({ isCollapsed, onDisconnect }: FitnessStats
   if (isCollapsed) {
     return null;
   }
-
-  const formatUpdateTime = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  };
 
   return (
     <motion.div
@@ -114,35 +151,82 @@ export default function FitnessStats({ isCollapsed, onDisconnect }: FitnessStats
           </div>
         ) : fitnessData.isConnected ? (
           <div className="p-4">
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <FaWalking className="text-blue-400 mr-3 text-lg" />
-                  <div>
-                    <p className="text-[#e0e0e0] text-sm">Steps Today</p>
-                    <p className="text-white font-medium">{fitnessData.steps.toLocaleString()}</p>
-                  </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className={`bg-[#2a2a2a] p-3 rounded-lg ${!fitnessData.metrics.steps.success ? 'opacity-60' : ''}`}>
+                <div className="flex items-center text-[#8f8f8f] mb-1">
+                  <FiTrendingUp className={`w-3.5 h-3.5 mr-1.5 ${!fitnessData.metrics.steps.success ? 'text-gray-500' : ''}`} />
+                  <span className="text-xs font-medium">STEPS</span>
                 </div>
+                <p className="text-xl font-semibold text-white">
+                  {fitnessData.metrics.steps.success 
+                    ? fitnessData.steps.toLocaleString() 
+                    : '--'}
+                </p>
               </div>
-              
-              {fitnessData.heartRate !== null && (
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <FaHeartbeat className="text-red-400 mr-3 text-lg" />
-                    <div>
-                      <p className="text-[#e0e0e0] text-sm">Heart Rate</p>
-                      <p className="text-white font-medium">{fitnessData.heartRate} bpm</p>
-                    </div>
-                  </div>
+
+              <div className={`bg-[#2a2a2a] p-3 rounded-lg ${!fitnessData.metrics.activeMinutes.success ? 'opacity-60' : ''}`}>
+                <div className="flex items-center text-[#8f8f8f] mb-1">
+                  <FiClock className={`w-3.5 h-3.5 mr-1.5 ${!fitnessData.metrics.activeMinutes.success ? 'text-gray-500' : ''}`} />
+                  <span className="text-xs font-medium">ACTIVE MIN</span>
                 </div>
-              )}
+                <p className="text-xl font-semibold text-white">
+                  {fitnessData.metrics.activeMinutes.success 
+                    ? `${fitnessData.activeMinutes} min` 
+                    : '--'}
+                </p>
+              </div>
+
+              <div className={`bg-[#2a2a2a] p-3 rounded-lg ${!fitnessData.metrics.calories.success ? 'opacity-60' : ''}`}>
+                <div className="flex items-center text-[#8f8f8f] mb-1">
+                  <FiZap className={`w-3.5 h-3.5 mr-1.5 ${!fitnessData.metrics.calories.success ? 'text-gray-500' : 'text-yellow-400'}`} />
+                  <span className="text-xs font-medium">CALORIES</span>
+                </div>
+                <p className="text-xl font-semibold text-white">
+                  {fitnessData.metrics.calories.success 
+                    ? `${fitnessData.calories.toLocaleString()} kcal` 
+                    : '--'}
+                </p>
+              </div>
+
+              <div className={`bg-[#2a2a2a] p-3 rounded-lg ${!fitnessData.metrics.distance.success ? 'opacity-60' : ''}`}>
+                <div className="flex items-center text-[#8f8f8f] mb-1">
+                  <FiNavigation2 className={`w-3.5 h-3.5 mr-1.5 ${!fitnessData.metrics.distance.success ? 'text-gray-500' : 'text-blue-400'}`} />
+                  <span className="text-xs font-medium">DISTANCE</span>
+                </div>
+                <p className="text-xl font-semibold text-white">
+                  {fitnessData.metrics.distance.success 
+                    ? `${(fitnessData.distance / 1000).toFixed(1)} km` 
+                    : '--'}
+                </p>
+              </div>
+
+              <div className={`bg-[#2a2a2a] p-3 rounded-lg ${!fitnessData.metrics.heartRate.success ? 'opacity-60' : ''}`}>
+                <div className="flex items-center text-[#8f8f8f] mb-1">
+                  <FiActivity className={`w-3.5 h-3.5 mr-1.5 ${!fitnessData.metrics.heartRate.success ? 'text-gray-500' : 'text-red-400'}`} />
+                  <span className="text-xs font-medium">HEART RATE</span>
+                </div>
+                <p className="text-xl font-semibold text-white">
+                  {fitnessData.metrics.heartRate.success && fitnessData.heartRate 
+                    ? `${fitnessData.heartRate} bpm` 
+                    : '--'}
+                </p>
+              </div>
+
+              <div className={`bg-[#2a2a2a] p-3 rounded-lg ${!fitnessData.metrics.sleepDuration.success ? 'opacity-60' : ''}`}>
+                <div className="flex items-center text-[#8f8f8f] mb-1">
+                  <FiMoon className={`w-3.5 h-3.5 mr-1.5 ${!fitnessData.metrics.sleepDuration.success ? 'text-gray-500' : 'text-blue-400'}`} />
+                  <span className="text-xs font-medium">SLEEP</span>
+                </div>
+                <p className="text-xl font-semibold text-white">
+                  {fitnessData.metrics.sleepDuration.success && fitnessData.sleepDuration
+                    ? `${Math.floor(fitnessData.sleepDuration / 60)}h ${fitnessData.sleepDuration % 60}m`
+                    : '--'}
+                </p>
+              </div>
             </div>
-            
-            {fitnessData.lastUpdated && (
-              <div className="text-xs text-[#8f8f8f] mt-4 pt-3 border-t border-[#333333]">
-                Updated: {formatUpdateTime(fitnessData.lastUpdated)}
-              </div>
-            )}
+            <div className="mt-4 text-xs text-[#8f8f8f] text-right">
+              Last updated: {new Date(fitnessData.lastUpdated).toLocaleTimeString()}
+            </div>
           </div>
         ) : (
           <div className="p-6 text-center">
