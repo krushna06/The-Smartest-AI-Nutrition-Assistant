@@ -8,17 +8,35 @@ import { getChats, deleteChat, Chat } from "../utils/chatStorage";
 import { useRouter } from "next/navigation";
 import { formatDistanceToNow } from "date-fns";
 import dynamic from "next/dynamic";
+import type { UserProfileProps, SettingsProps } from ".";
 
-const UserProfile = dynamic(() => import('./UserProfile'), {
-  ssr: false,
-  loading: () => (
-    <div className="p-4 border-t border-gray-700">
-      <div className="flex items-center justify-center">
-        <div className="w-8 h-8 rounded-full bg-gray-700 animate-pulse" />
+const UserProfileLoader = dynamic<UserProfileProps>(
+  () => import('.').then((mod) => mod.UserProfile),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="p-4 border-t border-gray-700">
+        <div className="flex items-center justify-center">
+          <div className="w-8 h-8 rounded-full bg-gray-700 animate-pulse" />
+        </div>
       </div>
-    </div>
-  )
-});
+    )
+  }
+);
+
+const SettingsLoader = dynamic<SettingsProps>(
+  () => import('.').then((mod) => mod.Settings),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="p-4 border-t border-gray-700">
+        <div className="flex items-center justify-center">
+          <div className="w-8 h-8 rounded-full bg-gray-700 animate-pulse" />
+        </div>
+      </div>
+    )
+  }
+);
 
 export default function Sidebar() {
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -180,7 +198,8 @@ export default function Sidebar() {
         )}
       </div>
       
-      <UserProfile isCollapsed={isCollapsed} />
+      <UserProfileLoader isCollapsed={isCollapsed} />
+      <SettingsLoader isCollapsed={isCollapsed} />
     </div>
   );
 }

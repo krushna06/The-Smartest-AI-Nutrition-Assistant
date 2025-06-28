@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, memo } from 'react';
 import Image from 'next/image';
 import { Loader2, User as UserIcon } from 'lucide-react';
 import { FaGoogle } from 'react-icons/fa';
@@ -9,14 +9,16 @@ interface UserProfileProps {
   isCollapsed: boolean;
 }
 
-type UserProfile = {
+type UserProfileData = {
   name: string;
   picture: string;
   email: string;
 } | null;
 
-export default function UserProfile({ isCollapsed }: UserProfileProps) {
-  const [profile, setProfile] = useState<UserProfile>(null);
+
+
+const UserProfile = ({ isCollapsed }: UserProfileProps) => {
+  const [profile, setProfile] = useState<UserProfileData>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [imageError, setImageError] = useState(false);
@@ -80,7 +82,7 @@ export default function UserProfile({ isCollapsed }: UserProfileProps) {
         <button
           onClick={handleLogin}
           disabled={isLoggingIn}
-          className={`flex items-center ${isCollapsed ? 'justify-center' : 'justify-start w-full'} text-gray-300 hover:text-white transition-colors`}
+          className={`flex items-center ${isCollapsed ? 'justify-center' : 'justify-start w-full'} text-gray-300`}
           title={isCollapsed ? 'Connect Fit' : ''}
         >
           {isLoggingIn ? (
@@ -123,4 +125,10 @@ export default function UserProfile({ isCollapsed }: UserProfileProps) {
       </div>
     </div>
   );
-}
+};
+
+const MemoizedUserProfile = memo(UserProfile);
+MemoizedUserProfile.displayName = 'UserProfile';
+
+export { MemoizedUserProfile as UserProfile };
+export type { UserProfileProps };
