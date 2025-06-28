@@ -341,9 +341,10 @@ export default function Home() {
   const handleDisconnect = async () => {
     try {
       await fetch('/api/fitness/disconnect', { method: 'POST' });
-      setIsConnected(false);
+      window.location.reload();
     } catch (error) {
       console.error('Error disconnecting:', error);
+      window.location.reload();
     }
   };
 
