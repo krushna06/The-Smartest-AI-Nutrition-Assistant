@@ -8,12 +8,14 @@ interface SpotlightSearchProps {
   isOpen: boolean;
   onClose: () => void;
   onSearch: (query: string) => string[];
+  onSelect: (result: string) => void;
 }
 
 export default function SpotlightSearch({
   isOpen,
   onClose,
   onSearch,
+  onSelect,
 }: SpotlightSearchProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<string[]>([]);
@@ -177,9 +179,10 @@ export default function SpotlightSearch({
                           }}
                           whileTap={{ scale: 0.98 }}
                           tabIndex={0}
+                          onClick={() => onSelect(result)}
                           onKeyDown={(e) => {
                             if (e.key === "Enter") {
-                              console.log("Selected:", result);
+                              onSelect(result);
                             } else if (
                               e.key === "ArrowDown" &&
                               index < searchResults.length - 1
@@ -212,7 +215,8 @@ export default function SpotlightSearch({
                             />
                           </div>
                           <span className="truncate text-[#e0e0e0] ml-2">
-                            {result}
+                            {typeof result === 'string' && result.startsWith('{"') ? 
+                              JSON.parse(result).title : result}
                           </span>
                         </motion.div>
                       ))}

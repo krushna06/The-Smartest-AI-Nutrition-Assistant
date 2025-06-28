@@ -53,14 +53,30 @@ export default function Sidebar() {
   }, []);
 
   const handleSearch = (query: string): string[] => {
-    if (query) {
-      return [
-        `Chat about ${query}`,
-        `Notes on ${query}`,
-        `Meeting: ${query} discussion`,
-      ];
+    if (!query.trim()) return [];
+    
+    const searchTerm = query.toLowerCase();
+    return chats
+      .filter(chat => 
+        chat.title.toLowerCase().includes(searchTerm) ||
+        chat.messages.some(msg => 
+          msg.content.toLowerCase().includes(searchTerm)
+        )
+      )
+      .map(chat => JSON.stringify({ id: chat.id, title: chat.title }))
+      .slice(0, 5);
+  };
+
+  const handleSearchSelect = (result: string) => {
+    try {
+      const chat = JSON.parse(result);
+      if (chat && chat.id) {
+        router.push(`/chat/${chat.id}`);
+        setIsSearchOpen(false);
+      }
+    } catch (e) {
+      console.error("Error parsing search result:", e);
     }
-    return [];
   };
 
   useEffect(() => {
@@ -126,6 +142,7 @@ export default function Sidebar() {
         isOpen={isSearchOpen}
         onClose={() => setIsSearchOpen(false)}
         onSearch={handleSearch}
+        onSelect={handleSearchSelect}
       />
 
       <div className="mx-4"></div>
