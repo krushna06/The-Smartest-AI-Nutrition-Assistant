@@ -7,3 +7,5 @@ ffmpeg-python==0.2.0
 requests==2.31.0
 PyAudio==0.2.13
 python-multipart==0.0.6
+pandas==2.1.0
+plotly==5.17.0

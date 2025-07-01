@@ -1,6 +1,9 @@
 import streamlit as st
-from datetime import datetime
-from typing import Dict, List, Optional
+import pandas as pd
+import plotly.express as px
+import plotly.graph_objects as go
+from datetime import datetime, timedelta
+from typing import Dict, List, Optional, Tuple
 from config import settings
 from services.ai_service import AIService
 
@@ -130,31 +133,252 @@ class MealPlanner:
         Now, create a meal plan following these EXACT specifications:
         """
 
+    def _parse_meal_plan(self, meal_plan: str) -> Dict[str, List[str]]:
+        """Parse the meal plan text into a structured dictionary"""
+        parsed_meals = {}
+        current_meal = None
+        
+        for line in meal_plan.split('\n'):
+            line = line.strip()
+            if not line:
+                continue
+                
+            line_upper = line.upper()
+            if any(meal in line_upper for meal in ['BREAKFAST', 'LUNCH', 'DINNER', 'SNACKS']):
+                meal_name = line.split(':')[0].strip() if ':' in line else line
+                current_meal = meal_name.upper()
+                parsed_meals[current_meal] = []
+            elif current_meal and (line.startswith('•') or line.startswith('-')):
+                item = line[1:].strip() if line.startswith('•') else line[1:].strip()
+                if item:
+                    parsed_meals[current_meal].append(item)
+                
+        return parsed_meals
+    
+    def _extract_calories_from_response(self, response: str) -> Dict[str, int]:
+        """Extract calorie information from the AI response"""
+        calories = {}
+        for line in response.split('\n'):
+            line = line.strip()
+            if ':' in line:
+                meal_part, cal_part = line.split(':', 1)
+                meal = meal_part.strip().upper()
+                if 'calories' in cal_part.lower():
+                    try:
+                        cal_value = int(''.join(filter(str.isdigit, cal_part)))
+                        calories[meal] = cal_value
+                    except (ValueError, IndexError):
+                        continue
+        return calories
+    
+    def _generate_nutrition_data(self, meal_plan: Dict[str, List[str]]) -> Tuple[pd.DataFrame, pd.DataFrame]:
+        """Generate nutrition data by querying Ollama for calorie information"""
+        if not meal_plan:
+            st.warning("No meal plan data available for analysis.")
+            return pd.DataFrame(), pd.DataFrame()
+        meal_plan_text = '\n'.join(
+            f"{meal}:\n" + '\n'.join(f"- {item}" for item in items)
+            for meal, items in meal_plan.items()
+        )
+        
+        prompt = f"""{meal_plan_text}
+        
+        Analyze the above meal plan and provide the estimated calories for each meal time in the exact format below:
+        
+        Breakfast: X calories
+        Lunch: X calories
+        Dinner: X calories
+        
+        Only respond with the calorie information in the exact format above, with one meal per line.
+        """
+        
+        try:
+            model = st.session_state.get("selected_model", settings.DEFAULT_MODEL)
+            response = self.ai_service.generate_response(
+                [{"role": "user", "content": prompt}],
+                model=model,
+                max_tokens=200
+            )
+        except Exception as e:
+            st.error("Error analyzing meal nutrition. Please try again.")
+            response = None
+        
+        meal_calories = self._extract_calories_from_response(response or '')
+        
+        default_calories = {
+            'BREAKFAST': 500,
+            'LUNCH': 700,
+            'DINNER': 600,
+            'SNACKS': 200
+        }
+        
+        calories_data = {}
+        for meal in ['BREAKFAST', 'LUNCH', 'DINNER', 'SNACKS']:
+            calories = meal_calories.get(meal, default_calories.get(meal, 0))
+            calories_data[meal] = {
+                'calories': calories,
+                'carbs': int(calories * 0.4 / 4),
+                'protein': int(calories * 0.3 / 4),
+                'fat': int(calories * 0.3 / 9)
+            }
+        
+        macros = []
+        for meal, data in calories_data.items():
+            if meal in meal_plan:
+                macros.extend([
+                    {'meal': meal, 'nutrient': 'Carbs', 'value': data['carbs']},
+                    {'meal': meal, 'nutrient': 'Protein', 'value': data['protein']},
+                    {'meal': meal, 'nutrient': 'Fat', 'value': data['fat']}
+                ])
+        
+        meals = []
+        for meal, items in meal_plan.items():
+            if meal in calories_data:
+                meals.append({
+                    'Meal': meal,
+                    'Calories': calories_data[meal]['calories'],
+                    'Color': '#636EFA' if meal == 'BREAKFAST' else 
+                            '#EF553B' if meal == 'LUNCH' else 
+                            '#00CC96' if meal == 'DINNER' else '#AB63FA'
+                })
+        
+        return pd.DataFrame(macros), pd.DataFrame(meals)
+    
+    def _display_visualizations(self, meal_plan: Dict[str, List[str]]):
+        """Display data visualizations for the meal plan"""
+        st.markdown("---")
+        st.subheader("📊 Nutrition Insights")
+        
+        with st.spinner("Analyzing meal nutrition..."):
+            try:
+                macros_df, meals_df = self._generate_nutrition_data(meal_plan)
+                
+                if macros_df.empty or meals_df.empty:
+                    st.warning("Unable to generate nutrition data for this meal plan.")
+                    return
+                
+                st.markdown("##### Nutrition Summary")
+                
+                summary_data = []
+                for meal in ['BREAKFAST', 'LUNCH', 'DINNER', 'SNACKS']:
+                    if meal in [m.upper() for m in meal_plan.keys()]:
+                        meal_data = macros_df[macros_df['meal'] == meal]
+                        if not meal_data.empty:
+                            carbs = int(meal_data[meal_data['nutrient'] == 'Carbs']['value'].sum())
+                            protein = int(meal_data[meal_data['nutrient'] == 'Protein']['value'].sum())
+                            fat = int(meal_data[meal_data['nutrient'] == 'Fat']['value'].sum())
+                            calories = int(meals_df[meals_df['Meal'] == meal]['Calories'].sum())
+                            
+                            summary_data.append({
+                                'Meal': meal.title(),
+                                'Calories': f"{calories} kcal",
+                                'Carbs': f"{carbs}g",
+                                'Protein': f"{protein}g",
+                                'Fat': f"{fat}g"
+                            })
+                
+                if summary_data:
+                    st.table(summary_data)
+                    st.write("")
+                
+            except Exception as e:
+                st.error("Error analyzing meal nutrition. Please try again.")
+                return
+            st.markdown("##### Macro-nutrient Distribution")
+            fig_macros = px.pie(
+                macros_df.groupby('nutrient')['value'].sum().reset_index(),
+                values='value',
+                names='nutrient',
+                color='nutrient',
+                color_discrete_map={
+                    'Carbs': '#636EFA',
+                    'Protein': '#EF553B',
+                    'Fat': '#00CC96'
+                },
+                hole=0.4
+            )
+            fig_macros.update_traces(textposition='inside', textinfo='percent+label')
+            fig_macros.update_layout(showlegend=False, height=300, margin=dict(t=0, b=0, l=0, r=0))
+            st.plotly_chart(fig_macros, use_container_width=True)
+            
+            st.markdown("##### Calorie Distribution by Meal")
+            fig_meals = px.bar(
+                meals_df,
+                x='Meal',
+                y='Calories',
+                color='Meal',
+                color_discrete_map={
+                    'BREAKFAST': '#636EFA',
+                    'LUNCH': '#EF553B',
+                    'DINNER': '#00CC96',
+                    'SNACKS': '#AB63FA'
+                },
+                text_auto=True
+            )
+            fig_meals.update_layout(
+                xaxis_title="",
+                yaxis_title="Calories",
+                showlegend=False,
+                height=400,
+                margin=dict(t=30, b=0, l=0, r=0)
+            )
+            st.plotly_chart(fig_meals, use_container_width=True)
+    
     def _display_meal_plan(self, meal_plan: str):
-        """Display the generated meal plan"""
+        """Display the generated meal plan with visualizations"""
         st.subheader("🍽️ Your Personalized Meal Plan")
         st.markdown("---")
         
-        sections = meal_plan.split('\n\n')
+        parsed_meals = self._parse_meal_plan(meal_plan)
         
-        for section in sections:
-            if not section.strip():
-                continue
-                
-            if section.upper() in ['BREAKFAST', 'LUNCH', 'DINNER', 'SNACKS', 'SNACK']:
-                st.markdown(f"### {section.upper()}")
-            else:
-                lines = section.split('\n')
-                for line in lines:
-                    if not line.strip():
-                        st.write('')
-                    elif line.strip().startswith('•'):
-                        st.markdown(f"- {line[1:].strip()}")
-                    elif ':' in line and len(line.split(':')) > 1 and len(line.split(':')[0]) < 30:
-                        parts = line.split(':', 1)
-                        st.markdown(f"**{parts[0].strip()}:** {parts[1].strip()}")
-                    else:
-                        st.write(line.strip())
+        if not parsed_meals or all(not items for items in parsed_meals.values()):
+            parsed_meals = self._extract_meals_from_text(meal_plan)
+        
+        if parsed_meals and any(items for items in parsed_meals.values()):
+            for meal, items in parsed_meals.items():
+                if items:
+                    st.markdown(f"### {meal.title()}")
+                    for item in items:
+                        st.markdown(f"- {item}")
+                    st.write("")
+            
+            self._display_visualizations(parsed_meals)
+        else:
+            st.warning("Here's your meal plan:")
+            st.text(meal_plan)
+    
+    def _extract_meals_from_text(self, text: str) -> Dict[str, List[str]]:
+        """Fallback method to extract meals from unstructured text"""
+        parsed_meals = {}
+        current_meal = None
+        
+        meal_indicators = {
+            'breakfast': 'BREAKFAST',
+            'lunch': 'LUNCH',
+            'dinner': 'DINNER',
+            'snack': 'SNACKS',
+            'meal': 'MEAL'
+        }
+        
+        lines = [line.strip() for line in text.split('\n') if line.strip()]
+        
+        for line in lines:
+            line_lower = line.lower()
+            
+            found_meal = False
+            for indicator, meal_name in meal_indicators.items():
+                if indicator in line_lower and len(line) < 30:
+                    current_meal = meal_name
+                    parsed_meals[current_meal] = []
+                    found_meal = True
+                    break
+            
+            if not found_meal and current_meal and len(line) > 3:
+                item = line.strip('•- ').split(':', 1)[0].strip()
+                if item and item.lower() not in meal_indicators:
+                    parsed_meals[current_meal].append(item)
+        
+        return parsed_meals
         
         st.session_state.messages.append({
             "role": "assistant", 
