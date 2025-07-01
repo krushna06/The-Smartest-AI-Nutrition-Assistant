@@ -1,3 +1,5 @@
+###### This branch is a rewrite of the [Typescript Codebase](https://github.com/krushna06/The-Smartest-AI-Nutrition-Assistant).
+
 # The Smartest AI Nutrition Assistant
 
 **The Smartest AI Nutrition Assistant** is an intelligent, all-in-one platform that uses state-of-the-art generative AI to deliver hyper-personalized nutrition guidance. Unlike traditional one-size-fits-all apps, this assistant learns, reasons, and adapts like a real nutrition expert—offering dynamic meal plans, contextual recommendations, and intuitive interactions via **text, voice, and image** inputs.
