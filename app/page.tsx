@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Paperclip, Mic, MicOff } from "lucide-react";
 import dynamic from "next/dynamic";
+import { makeApiCall } from "./utils/api";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { saveChat } from "./utils/chatStorage";
@@ -206,7 +207,7 @@ export default function Home() {
       let responseData;
       
       try {
-        response = await fetch('http://localhost:8000/api/speech-to-text', {
+        response = await makeApiCall('/api/speech-to-text', {
           method: 'POST',
           body: formData,
           signal: controller.signal,
@@ -324,7 +325,7 @@ export default function Home() {
 
   const checkConnection = async () => {
     try {
-      const response = await fetch('/api/fitness/check');
+      const response = await makeApiCall('/api/fitness/check');
       if (response.ok) {
         const data = await response.json();
         setIsConnected(data.isConnected);
@@ -340,7 +341,7 @@ export default function Home() {
 
   const handleDisconnect = async () => {
     try {
-      await fetch('/api/fitness/disconnect', { method: 'POST' });
+      await makeApiCall('/api/fitness/disconnect', { method: 'POST' });
       window.location.reload();
     } catch (error) {
       console.error('Error disconnecting:', error);

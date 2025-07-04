@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { saveMealPlanToChat } from "@/app/utils/chatStorage";
+import { makeOllamaApiCall } from "@/app/utils/api";
 import { usePathname } from "next/navigation";
 
 export type Meal = {
@@ -108,11 +109,8 @@ Dinner
 • Item 2
 • Item 3`;
 
-      const response = await fetch('http://localhost:11434/api/generate', {
+      const response = await makeOllamaApiCall('/api/generate', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({
           model: 'qwen2.5:0.5b',
           prompt: prompt,
@@ -120,13 +118,7 @@ Dinner
         }),
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to generate meal plan');
-      }
-
-      const data = await response.json();
-      
-      const responseText = data.response || '';
+      const responseText = response?.response || response?.text || '';
       console.log('Raw response from Ollama:', responseText);
       
       const meals: Meal[] = [];

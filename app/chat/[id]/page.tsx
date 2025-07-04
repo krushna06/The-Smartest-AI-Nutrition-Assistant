@@ -7,6 +7,7 @@ import { ChatHeader } from "@/app/components/ChatHeader";
 import { MainChatBox } from "@/app/components/MainChatBox";
 import { MessageInput } from "@/app/components/MessageInput";
 import { MealPlan } from "@/app/components/MealPlan";
+import { makeOllamaApiCall } from "@/app/utils/api";
 
 export type UIMessage = {
   id: string;
@@ -127,11 +128,8 @@ export default function ChatPage({ params }: { params: { id: string } }) {
         ? `\n\nHere is the user's meal plan for context:\n${JSON.stringify(currentChat.mealPlan, null, 2)}`
         : '';
       
-      const response = await fetch('http://localhost:11434/api/generate', {
+      const response = await makeOllamaApiCall('/api/generate', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({
           model: 'qwen2.5:0.5b',
           prompt: `${messageContent}${mealPlanContext}`,
@@ -139,12 +137,8 @@ export default function ChatPage({ params }: { params: { id: string } }) {
         }),
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to get response from Ollama');
-      }
-
-      const data = await response.json();
-      const responseContent = data.response || 'I apologize, but I am unable to provide a response at this time.';
+      const responseContent = response?.response || response?.text || 
+        'I apologize, but I am unable to provide a response at this time.';
       
       await addMessageToChat(chatId, {
         role: 'assistant',

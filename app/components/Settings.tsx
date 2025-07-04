@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect, memo } from 'react';
+import { useState, memo } from 'react';
 import { Settings as SettingsIcon, ChevronDown, ChevronRight } from 'lucide-react';
+import { useApiUrls, DEFAULT_API_URLS } from '@/app/hooks/useApiUrls';
 
 export interface SettingsData {
   backendUrl: string;
@@ -14,52 +15,52 @@ interface SettingsProps {
 
 const Settings = ({ isCollapsed }: SettingsProps) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [settings, setSettings] = useState<SettingsData>({
-    backendUrl: 'http://localhost:8000',
-    ollamaApiUrl: 'http://localhost:11434'
+  const [settings, setSettings] = useState<SettingsData>(DEFAULT_API_URLS);
+  const [, updateApiUrls] = useApiUrls();
+
+  useState(() => {
+    try {
+      const savedSettings = localStorage.getItem('app_settings');
+      if (savedSettings) {
+        const parsedSettings = JSON.parse(savedSettings);
+        setSettings({
+          backendUrl: parsedSettings.backendUrl || DEFAULT_API_URLS.backendUrl,
+          ollamaApiUrl: parsedSettings.ollamaApiUrl || DEFAULT_API_URLS.ollamaApiUrl
+        });
+      }
+    } catch (error) {
+      console.error('Failed to load settings:', error);
+    }
   });
 
-  useEffect(() => {
-    const loadSettings = () => {
-      try {
-        const savedSettings = localStorage.getItem('app_settings');
-        if (savedSettings) {
-          setSettings(JSON.parse(savedSettings));
-        }
-      } catch (error) {
-        console.error('Failed to load settings:', error);
-      }
+  const handleUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    const newSettings = {
+      ...settings,
+      [name]: value
     };
-
-    loadSettings();
-  }, []);
-
-  useEffect(() => {
-    if (settings) {
-      localStorage.setItem('app_settings', JSON.stringify(settings));
-    }
-  }, [settings]);
+    setSettings(newSettings);
+    updateApiUrls(newSettings);
+    localStorage.setItem('app_settings', JSON.stringify(newSettings));
+  };
 
   const toggleSettings = (e: React.MouseEvent) => {
     e.stopPropagation();
     setIsOpen(!isOpen);
   };
 
-  const handleUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setSettings(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target as HTMLInputElement;
+    const newValue = type === 'checkbox' ? (e.target as HTMLInputElement).checked : value;
     
-    setSettings(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value
-    }));
+    const newSettings = {
+      ...settings,
+      [name]: newValue
+    };
+    
+    setSettings(newSettings);
+    updateApiUrls(newSettings);
+    localStorage.setItem('app_settings', JSON.stringify(newSettings));
   };
 
   if (isCollapsed) {
@@ -100,7 +101,7 @@ const Settings = ({ isCollapsed }: SettingsProps) => {
                 type="url"
                 name="backendUrl"
                 value={settings.backendUrl}
-                onChange={handleUrlChange}
+                onChange={handleChange}
                 placeholder="http://localhost:8000"
                 className="w-full bg-[#2a2a2a] border border-[#333333] rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
@@ -112,7 +113,7 @@ const Settings = ({ isCollapsed }: SettingsProps) => {
                 type="url"
                 name="ollamaApiUrl"
                 value={settings.ollamaApiUrl}
-                onChange={handleUrlChange}
+                onChange={handleChange}
                 placeholder="http://localhost:11434"
                 className="w-full bg-[#2a2a2a] border border-[#333333] rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />

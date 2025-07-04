@@ -15,6 +15,7 @@ import { FaHeartbeat, FaWalking } from 'react-icons/fa';
 
 import { FitnessData } from '../services/googleFitService';
 import FitnessModal from './FitnessModal';
+import { makeApiCall } from '@/app/utils/api';
 
 interface FitnessStatsData extends Omit<FitnessData, 'metrics'> {
   metrics: {
@@ -60,13 +61,8 @@ export default function FitnessStats({ isCollapsed, onDisconnect }: FitnessStats
   const fetchFitnessData = async () => {
     try {
       setFitnessData(prev => ({ ...prev, isLoading: true }));
-      const response = await fetch('/api/fitness');
+      const data = await makeApiCall('/api/fitness');
       
-      if (!response.ok) {
-        throw new Error('Failed to fetch fitness data');
-      }
-      
-      const data = await response.json();
       setFitnessData({
         steps: data.steps,
         heartRate: data.heartRate,

@@ -4,6 +4,7 @@ import { useEffect, useState, memo } from 'react';
 import Image from 'next/image';
 import { Loader2, User as UserIcon } from 'lucide-react';
 import { FaGoogle } from 'react-icons/fa';
+import { makeApiCall } from '@/app/utils/api';
 
 interface UserProfileProps {
   isCollapsed: boolean;
@@ -25,21 +26,17 @@ const UserProfile = ({ isCollapsed }: UserProfileProps) => {
 
   const fetchProfile = async () => {
     try {
-      const response = await fetch('/api/auth/me');
-      if (response.status === 401) {
+      const data = await makeApiCall('/api/auth/me');
+      setProfile(data);
+    } catch (error: any) {
+      if (error.message.includes('401')) {
         setProfile(null);
         document.cookie = 'google_access_token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
         document.cookie = 'google_refresh_token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
-        return;
+      } else {
+        console.error('Failed to fetch user profile:', error);
+        setProfile(null);
       }
-      
-      if (response.ok) {
-        const data = await response.json();
-        setProfile(data);
-      }
-    } catch (error) {
-      console.error('Failed to fetch user profile:', error);
-      setProfile(null);
     } finally {
       setIsLoading(false);
     }
