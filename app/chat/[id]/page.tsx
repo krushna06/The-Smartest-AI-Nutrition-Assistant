@@ -128,17 +128,38 @@ export default function ChatPage({ params }: { params: { id: string } }) {
         ? `\n\nHere is the user's meal plan for context:\n${JSON.stringify(currentChat.mealPlan, null, 2)}`
         : '';
       
+      console.log('Sending to Ollama:', { messageContent, mealPlanContext });
+      
       const response = await makeOllamaApiCall('/api/generate', {
         method: 'POST',
         body: JSON.stringify({
-          model: 'qwen2.5:0.5b',
+          model: 'deepseek-r1:14b',
           prompt: `${messageContent}${mealPlanContext}`,
           stream: false,
         }),
       });
 
-      const responseContent = response?.response || response?.text || 
-        'I apologize, but I am unable to provide a response at this time.';
+      console.log('Received from Ollama:', response);
+      
+      let responseContent = 'I apologize, but I am unable to provide a response at this time.';
+      
+      if (response) {
+        if (typeof response.response === 'string') {
+          responseContent = response.response;
+        } else if (typeof response.text === 'string') {
+          responseContent = response.text;
+        } else if (response.choices && response.choices[0]?.text) {
+          responseContent = response.choices[0].text;
+        } else if (response.choices && response.choices[0]?.message?.content) {
+          responseContent = response.choices[0].message.content;
+        } else if (response.message?.content) {
+          responseContent = response.message.content;
+        } else if (response.content) {
+          responseContent = response.content;
+        } else {
+          console.warn('Unexpected Ollama response format:', response);
+        }
+      }
       
       await addMessageToChat(chatId, {
         role: 'assistant',
