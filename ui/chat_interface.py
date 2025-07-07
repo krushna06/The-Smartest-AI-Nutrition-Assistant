@@ -8,6 +8,7 @@ from utils.helpers import display_messages, add_message, get_chat_history
 class ChatInterface:
     def __init__(self, ai_service: AIService):
         self.ai_service = ai_service
+        self.audio_service = ai_service.audio_service
 
     def render(self):
         """Render the main chat interface"""
@@ -21,10 +22,8 @@ class ChatInterface:
         """Render the chat input and handle user messages"""
         if prompt := st.chat_input("Ask me anything about nutrition..."):
             add_message("user", prompt)
-            
             with st.chat_message("user"):
                 st.markdown(prompt)
-            
             self._generate_and_display_response()
 
     def _generate_and_display_response(self):

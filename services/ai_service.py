@@ -1,10 +1,12 @@
 import requests
 from typing import List, Dict, Optional
 from config import settings
+from services.audio_service import AudioService
 
 class AIService:
     def __init__(self, api_base: str = settings.OLLAMA_API_BASE):
         self.api_base = api_base
+        self.audio_service = AudioService()
 
     def generate_response(
         self, 
