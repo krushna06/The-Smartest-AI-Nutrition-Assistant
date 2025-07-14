@@ -3,3 +3,5 @@ config/__pycache__
 services/__pycache__
 ui/__pycache__
 utils/__pycache__
+.env
+google_fit_tokens.json

@@ -7,6 +7,40 @@ from ui.sidebar import Sidebar
 from ui.chat_interface import ChatInterface
 from ui.meal_planner import MealPlanner
 from utils.helpers import init_session_state
+import threading
+from flask import Flask, request, redirect
+import requests as pyrequests
+import os
+import json
+
+flask_app = Flask(__name__)
+
+google_fit_tokens = {}
+
+@flask_app.route('/oauth2callback')
+def oauth2callback():
+    code = request.args.get('code')
+    if not code:
+        return 'No code provided', 400
+    token_url = 'https://oauth2.googleapis.com/token'
+    data = {
+        'code': code,
+        'client_id': settings.GOOGLE_CLIENT_ID,
+        'client_secret': settings.GOOGLE_CLIENT_SECRET,
+        'redirect_uri': settings.GOOGLE_FIT_REDIRECT_URI,
+        'grant_type': 'authorization_code',
+    }
+    resp = pyrequests.post(token_url, data=data)
+    if resp.status_code == 200:
+        tokens = resp.json()
+        with open('google_fit_tokens.json', 'w') as f:
+            json.dump(tokens, f)
+        return redirect('http://localhost:8501')
+    else:
+        return f'Failed to get tokens: {resp.text}', 400
+
+def run_flask():
+    flask_app.run(port=5000)
 
 def setup_page():
     """Set up the Streamlit page configuration"""
@@ -60,4 +94,6 @@ def main():
     meal_planner.render()
 
 if __name__ == "__main__":
+    flask_thread = threading.Thread(target=run_flask, daemon=True)
+    flask_thread.start()
     main()

@@ -2,6 +2,7 @@ import requests
 from typing import List, Dict, Optional
 from config import settings
 from services.audio_service import AudioService
+from urllib.parse import urlencode
 
 class AIService:
     def __init__(self, api_base: str = settings.OLLAMA_API_BASE):
@@ -81,3 +82,64 @@ class AIService:
                 
         except Exception as e:
             return f"Error in analyze_image: {str(e)}"
+
+    @staticmethod
+    def get_google_fit_oauth_url():
+        params = {
+            'client_id': settings.GOOGLE_CLIENT_ID,
+            'redirect_uri': settings.GOOGLE_FIT_REDIRECT_URI,
+            'response_type': 'code',
+            'scope': ' '.join(settings.GOOGLE_FIT_SCOPES),
+            'access_type': 'offline',
+            'prompt': 'consent',
+        }
+        return f"https://accounts.google.com/o/oauth2/v2/auth?{urlencode(params)}"
+
+    @staticmethod
+    def fetch_google_fit_data(tokens):
+        import time
+        access_token = tokens.get('access_token')
+        if not access_token:
+            return None
+        headers = {'Authorization': f'Bearer {access_token}', 'Content-Type': 'application/json'}
+        now = int(time.time() * 1000)
+        start_of_day = now - (now % 86400000)
+        datasets = {
+            'steps': {
+                'dataTypeName': 'com.google.step_count.delta',
+                'field': 'steps',
+            },
+            'calories': {
+                'dataTypeName': 'com.google.calories.expended',
+                'field': 'calories',
+            },
+            'heart_rate': {
+                'dataTypeName': 'com.google.heart_rate.bpm',
+                'field': 'bpm',
+            },
+        }
+        results = {}
+        for key, meta in datasets.items():
+            body = {
+                "aggregateBy": [{"dataTypeName": meta['dataTypeName']}],
+                "bucketByTime": {"durationMillis": 86400000},
+                "startTimeMillis": start_of_day,
+                "endTimeMillis": now
+            }
+            resp = requests.post(
+                'https://www.googleapis.com/fitness/v1/users/me/dataset:aggregate',
+                headers=headers,
+                json=body
+            )
+            if resp.status_code == 200:
+                buckets = resp.json().get('bucket', [])
+                total = 0
+                for bucket in buckets:
+                    for dataset in bucket.get('dataset', []):
+                        for point in dataset.get('point', []):
+                            for value in point.get('value', []):
+                                total += value.get(meta['field'], 0) if isinstance(value, dict) else value
+                results[key] = total
+            else:
+                results[key] = f"Error: {resp.text}"
+        return results

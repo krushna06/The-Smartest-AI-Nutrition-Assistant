@@ -10,3 +10,6 @@ requests==2.31.0
 python-multipart==0.0.6
 pandas==2.1.0
 plotly==5.17.0
+google-auth==2.29.0
+google-auth-oauthlib==1.2.0
+Flask==3.0.3

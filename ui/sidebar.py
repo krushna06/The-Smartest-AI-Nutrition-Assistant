@@ -3,6 +3,9 @@ from typing import Optional, Tuple
 from config import settings
 from services.audio_service import AudioService
 from services.image_service import ImageService
+import sys
+import os
+import json
 
 class Sidebar:
     def __init__(self, ai_service, audio_service: AudioService, image_service: ImageService):
@@ -15,6 +18,9 @@ class Sidebar:
         with st.sidebar:
             self._render_header()
             self._render_model_selector()
+            st.markdown("---")
+            self._render_connect_fit_button()
+            self._render_google_fit_status()
             st.markdown("---")
             self._render_voice_input()
             st.markdown("---")
@@ -39,6 +45,33 @@ class Sidebar:
         )
         
         st.session_state.selected_model = selected_model
+
+    def _render_connect_fit_button(self):
+        """Render the Connect Fit button"""
+        oauth_url = self.ai_service.get_google_fit_oauth_url()
+        st.markdown(f'<a href="{oauth_url}" target="_blank"><button style="width:100%;padding:0.5em 0.8em;font-size:1em;">Connect Fit</button></a>', unsafe_allow_html=True)
+
+    def _render_google_fit_status(self):
+        tokens = None
+        if os.path.exists('google_fit_tokens.json'):
+            try:
+                with open('google_fit_tokens.json', 'r') as f:
+                    tokens = json.load(f)
+            except Exception:
+                tokens = None
+        if tokens:
+            st.success("Google Fit Connected!")
+            if st.button("Fetch Google Fit Data"):
+                data = self.ai_service.fetch_google_fit_data(tokens)
+                if data:
+                    st.markdown("#### Today's Google Fit Stats")
+                    st.metric("Steps", f"{int(data.get('steps', 0)):,}")
+                    st.metric("Calories Burned", f"{int(data.get('calories', 0)):,} kcal")
+                    st.metric("Avg Heart Rate", f"{data.get('heart_rate', 0)} bpm")
+                else:
+                    st.warning("No data available.")
+        else:
+            st.info("Google Fit not connected.")
 
     def _render_voice_input(self):
         """Render the voice input section"""
