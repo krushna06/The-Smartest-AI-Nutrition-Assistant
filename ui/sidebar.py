@@ -47,9 +47,14 @@ class Sidebar:
         st.session_state.selected_model = selected_model
 
     def _render_connect_fit_button(self):
-        """Render the Connect Fit button"""
+        """Render the Connect Fit button to match the style of Fetch Google Fit Data"""
         oauth_url = self.ai_service.get_google_fit_oauth_url()
-        st.markdown(f'<a href="{oauth_url}" target="_blank"><button style="width:100%;padding:0.5em 0.8em;font-size:1em;">Connect Fit</button></a>', unsafe_allow_html=True)
+        if st.button("Connect Fit"):
+            st.markdown(f"""
+                <script>
+                window.open('{oauth_url}', '_blank');
+                </script>
+            """, unsafe_allow_html=True)
 
     def _render_google_fit_status(self):
         tokens = None
